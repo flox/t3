@@ -77,9 +77,9 @@ A diagram depicting the internal operation of `t3` is shown below:
 flowchart LR
  subgraph s2["New t3 Invocation"]
         n20["t3 &lt;file&gt; -- cmd args"]
-        s3["Worker 1"]
-        s4["Command"]
-        s5["Worker 2"]
+        s3["Worker 1"]:::subprocess
+        s4["Command"]:::subprocess
+        s5["Worker 2"]:::subprocess
         n24["Buffer, Sort &amp; Collate"]
         n25["&lt;file&gt;"]
         n26["stdout"]
@@ -95,12 +95,13 @@ flowchart LR
         n28["add<br>timestamp"]
   end
     n20 -. fork .-> s3 & s4 & s5
-    n23 -- stdout --> n21
-    n21 --> n24
+    n23 -- stdout pipe --> n21
+    n21 -- stdout message pipe --> n24
     n24 --> n25 & n26 & n27
-    n28 --> n24
-    n23 -- stderr --> n28
+    n28 -- stderr message pipe --> n24
+    n23 -- stderr pipe --> n28
 
+    classDef subprocess fill:#ace
     n25@{ shape: doc}
     n26@{ shape: terminal}
     n27@{ shape: terminal}
