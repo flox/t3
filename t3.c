@@ -126,7 +126,7 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
 
   // Send a message to the parent process to indicate that the child
   // process has started
-  snprintf(msg_payload.text, BUFFER_SIZE, "%s started\n", prefix);
+  snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix);
   msg_payload.timestamp.tv_sec = 0;
   msg_payload.timestamp.tv_nsec = 0;
   ssize_t written = write(pipe_fd, &msg_payload, sizeof(msg_payload));
@@ -172,7 +172,7 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
         }
 
         // Copy the line into the payload
-        snprintf(msg_payload.text, BUFFER_SIZE, "%s\n", line);
+        snprintf(msg_payload.text, BUFFER_SIZE, "%s", line);
 
         // Send message to parent process being careful to ensure
         // that the entire message is sent.
@@ -287,13 +287,13 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
     // Make sure timestamp is empty
     timestamp[0] = '\0';
   }
-  fprintf(logfile, "%s%s%s%s%s%s", ts_color, timestamp, reset_color, color,
+  fprintf(logfile, "%s%s%s%s%s%s\n", ts_color, timestamp, reset_color, color,
           msg_payload->text, reset_color);
   if (color_to_tty) {
-    fprintf(stream, "%s%s%s%s%s%s", ts_color, timestamp, reset_color, color,
+    fprintf(stream, "%s%s%s%s%s%s\n", ts_color, timestamp, reset_color, color,
             msg_payload->text, reset_color);
   } else {
-    fprintf(stream, "%s%s", timestamp, msg_payload->text);
+    fprintf(stream, "%s%s\n", timestamp, msg_payload->text);
   }
   fflush(stream);
 }
@@ -466,7 +466,7 @@ int main(int argc, char *argv[]) {
             test_msg_payload.text);
     return EXIT_FAILURE;
   }
-  if (strcmp(test_msg_payload.text, "stdout started\n") != 0) {
+  if (strcmp(test_msg_payload.text, "stdout started") != 0) {
     fprintf(stderr, "Error: Unexpected message from stdout worker: %s",
             test_msg_payload.text);
     return EXIT_FAILURE;
@@ -501,7 +501,7 @@ int main(int argc, char *argv[]) {
             test_msg_payload.text);
     return EXIT_FAILURE;
   }
-  if (strcmp(test_msg_payload.text, "stderr started\n") != 0) {
+  if (strcmp(test_msg_payload.text, "stderr started") != 0) {
     fprintf(stderr, "Error: Unexpected message from stderr worker: %s",
             test_msg_payload.text);
     return EXIT_FAILURE;
