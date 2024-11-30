@@ -49,13 +49,13 @@ TESTTMPDIR := $(shell mktemp -d)
 define TEST_template =
   $(eval testname := $(notdir $(test)))
 
+  .INTERMEDIATE: $(test).sh
   $(test).sh: $(test).args
 	@mkdir -p $$(TESTTMPDIR)
 	@echo "#!/bin/sh" > $$@
 	@echo -n './$$(BIN) "$$$$1" ' >> $$@
 	@cat $(test).args >> $$@
 	@chmod +x $$@
-	git add $(test).sh
 
   # If the test files aren't present or make is invoked with
   # REGENERATE_TEST_RESULTS=1, automatically outputs from args.
@@ -70,7 +70,7 @@ define TEST_template =
 	git add -f $(test).log $(test).out $(test).err
 
   .PHONY: $(test)/run
-  $(test)/run: $(test).sh $$(BIN) $(test).rc $(test).log $(test).out $(test).err
+  $(test)/run: $(test).sh $$(BIN) $(if $(wildcard .git),$(test).rc $(test).log $(test).out $(test).err)
 	@expectedrc=`cat $$(@D).rc`; \
 	echo "+ $$< $$(TESTTMPDIR)/$(testname).log > $$(TESTTMPDIR)/$(testname).out 2> $$(TESTTMPDIR)/$(testname).err"; \
 	$$< $$(TESTTMPDIR)/$(testname).log > $$(TESTTMPDIR)/$(testname).out 2> $$(TESTTMPDIR)/$(testname).err; \

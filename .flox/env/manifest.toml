@@ -66,5 +66,6 @@ systems = ["aarch64-darwin", "aarch64-linux", "x86_64-darwin", "x86_64-linux"]
 t3.sandbox = "pure"
 t3.command = '''
   make
+  make test
   make install PREFIX=$out
 '''
