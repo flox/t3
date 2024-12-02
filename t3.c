@@ -696,9 +696,10 @@ int main(int argc, char *argv[]) {
   }
 
   // Wait for child command process to complete
-  waitpid(pid, NULL, 0);
+  int status;
+  waitpid(pid, &status, 0);
 
   fclose(logfile);
 
-  return EXIT_SUCCESS;
+  return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
 }
