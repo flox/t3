@@ -54,8 +54,10 @@
 int color_to_tty = 1;
 int debuglevel = 0;
 int timestamp_enabled = 0;
+int relative_timestamps = 0;
 const char *ts_color = ANSI_COLOR_INDIGO_300; // Timestamp color
 const char *reset_color = ANSI_RESET;
+struct timespec start_timestamp;
 
 #define _debug(dlevel, format, ...)                                            \
   if (debuglevel && debuglevel >= dlevel)                                      \
@@ -104,6 +106,9 @@ static void usage(const int rc) {
   printf("  -e, --errcolor    color\n");
   printf("  -t, --ts          "
          "enable timestamps in all outputs\n");
+  printf("  -r, --relative   "
+         "display timestamps as relative offsets from start time "
+         "(implies --ts)\n");
   printf("  -h, --help        print this help message\n");
   printf("  -v, --version     print version string\n");
   printf("  --debug           enable debugging\n");
@@ -272,17 +277,36 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
   // Write stderr message if only stderr is ready
   char timestamp[100];
   if (timestamp_enabled) {
-    struct tm *time_info = localtime(&msg_payload->timestamp.tv_sec);
-    if (!time_info) {
-      perror("localtime");
-      exit(EXIT_FAILURE);
+    if (relative_timestamps) {
+      // Write elapsed time since the start of the program as HH:MM:SS.MMMMMM.
+      // First calculate the elapsed time in seconds and nanoseconds.
+      long elapsed_sec = msg_payload->timestamp.tv_sec - start_timestamp.tv_sec;
+      long elapsed_nsec =
+          msg_payload->timestamp.tv_nsec - start_timestamp.tv_nsec;
+      if (elapsed_nsec < 0) {
+        elapsed_sec--;
+        elapsed_nsec += 1000000000L;
+      }
+      // Then append the elapsed time to the timestamp string
+      // in HH:MM:SS.MMMMMM format along with a trailing space.
+      int hours = elapsed_sec / 3600;
+      int minutes = (elapsed_sec % 3600) / 60;
+      int seconds = elapsed_sec % 60;
+      sprintf(timestamp, "%02d:%02d:%02d.%06ld ", hours, minutes, seconds,
+              (elapsed_nsec / 1000));
+    } else {
+      struct tm *time_info = localtime(&msg_payload->timestamp.tv_sec);
+      if (!time_info) {
+        perror("localtime");
+        exit(EXIT_FAILURE);
+      }
+      // Set timestamp to HH:MM:SS.NNNNNNNNN
+      // First write the time in HH:MM:SS format
+      strftime(timestamp, sizeof(timestamp), "%H:%M:%S", time_info);
+      // Then append the nanoseconds and a space
+      sprintf(timestamp + strlen(timestamp), ".%06ld ",
+              msg_payload->timestamp.tv_nsec / 1000);
     }
-    // Set timestamp to HH:MM:SS.NNNNNNNNN
-    // First write the time in HH:MM:SS format
-    strftime(timestamp, sizeof(timestamp), "%H:%M:%S", time_info);
-    // Then append the nanoseconds and a space
-    sprintf(timestamp + strlen(timestamp), ".%06ld ",
-            msg_payload->timestamp.tv_nsec / 1000);
   } else {
     // Make sure timestamp is empty
     timestamp[0] = '\0';
@@ -302,7 +326,7 @@ int main(int argc, char *argv[]) {
   int opt;
   int option_index = 0;
   const char *logfile_name = NULL;
-  const char *out_color = ""; // No color for stdout
+  const char *out_color = "";                             // No color for stdout
   const char *err_color = ANSI_BOLD ANSI_COLOR_AMBER_400; // Default for stderr
   int color_light = 0;
   int color_dark = 0;
@@ -321,12 +345,13 @@ int main(int argc, char *argv[]) {
       {"light", no_argument, 0, 'l'},
       {"outcolor", required_argument, 0, 'o'},
       {"plain", no_argument, 0, 'p'},
+      {"relative", no_argument, 0, 'r'},
       {"ts", no_argument, 0, 't'},
       {"version", no_argument, 0, 'v'},
       {"debug", no_argument, 0, 'x'},
       {0, 0, 0, 0}};
 
-  while ((opt = getopt_long(argc, argv, "bde:flho:ptv", long_options,
+  while ((opt = getopt_long(argc, argv, "bde:flho:prtv", long_options,
                             &option_index)) != -1) {
     switch (opt) {
     case 'l':
@@ -361,6 +386,11 @@ int main(int argc, char *argv[]) {
     case 'e':
       err_color = optarg;
       break;
+    case 'r':
+      relative_timestamps = 1;
+      timestamp_enabled = 1;
+      timestamp_mode = 1;
+      break;
     case 't':
       timestamp_enabled = 1;
       timestamp_mode = 1;
@@ -387,8 +417,9 @@ int main(int argc, char *argv[]) {
   }
 
   if (forcecolor_mode + plain_mode > 1) {
-    fprintf(stderr,
-            "Error: Options --forcecolor and --plain are mutually exclusive.\n");
+    fprintf(
+        stderr,
+        "Error: Options --forcecolor and --plain are mutually exclusive.\n");
     usage(EXIT_FAILURE);
   }
 
@@ -434,6 +465,12 @@ int main(int argc, char *argv[]) {
   if (!logfile) {
     perror("Error opening logfile");
     return EXIT_FAILURE;
+  }
+
+  // Get the current time with nanosecond precision
+  if (clock_gettime(CLOCK_REALTIME, &start_timestamp) == -1) {
+    perror("clock_gettime");
+    exit(EXIT_FAILURE);
   }
 
   // Test message payload for verifying stdout and stderr workers
