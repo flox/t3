@@ -143,6 +143,9 @@ endef
 
 $(foreach test,$(TESTS),$(eval $(call TEST_template)))
 
+# The partial write test depends on the compiled tests/midline-flush binary.
+tests/midline-flush/run: tests/midline-flush
+
 # Once tests are complete (and successful), remove test results.
 test:
 	@rm -rf $(TESTTMPDIR)

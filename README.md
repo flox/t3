@@ -120,9 +120,10 @@ Invoke provided command and write its colorized, precise time-stamped output bot
   -d, --dark        use color scheme suitable for dark backgrounds
   -b, --bold        highlight stderr in bold text (with no color)
   -p, --plain       disable all timestamps, ANSI color and highlighting
-  -o, --outcolor    color
+  -f, --forcecolor  enforce the use of color when not writing to a TTY
   -e, --errcolor    color
   -t, --ts          enable timestamps in all outputs
+  -r, --relative    display timestamps as relative offsets from start time (implies --ts)
   -h, --help        print this help message
   -v, --version     print version string
   --debug           enable debugging

@@ -39,33 +39,37 @@
 #define BUFFER_SIZE 4096
 
 // A few ANSI color codes, see https://materialui.co/colors
-#define ANSI_COLOR_INDIGO_400 "\033[38;5;99m"
-#define ANSI_COLOR_INDIGO_300 "\033[38;5;141m"
-#define ANSI_COLOR_YELLOW_400 "\033[38;5;214m"
-#define ANSI_COLOR_YELLOW_300 "\033[38;5;220m"
-#define ANSI_COLOR_AMBER_400 "\033[38;5;130m"
-#define ANSI_COLOR_AMBER_300 "\033[38;5;166m"
-#define ANSI_COLOR_ORANGE_400 "\033[38;5;166m"
-#define ANSI_COLOR_ORANGE_300 "\033[38;5;130m"
-#define ANSI_BOLD "\033[1m"
-#define ANSI_RESET "\033[0m"
+#define ANSI_COLOR_RESET "\x1b[0m"
+#define ANSI_COLOR_BOLD "\x1b[1m"
+#define ANSI_COLOR_BLACK "\x1b[30m"
+#define ANSI_COLOR_RED "\x1b[31m"
+#define ANSI_COLOR_GREEN "\x1b[32m"
+#define ANSI_COLOR_YELLOW "\x1b[33m"
+#define ANSI_COLOR_BLUE "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN "\x1b[36m"
+#define ANSI_COLOR_WHITE "\x1b[37m"
 
 // Global variables
 int color_to_tty = 1;
 int debuglevel = 0;
 int timestamp_enabled = 0;
 int relative_timestamps = 0;
-const char *ts_color = ANSI_COLOR_INDIGO_300; // Timestamp color
-const char *reset_color = ANSI_RESET;
+const char *ts_color = ANSI_COLOR_CYAN; // Timestamp color
+const char *reset_color = ANSI_COLOR_RESET;
 struct timespec start_timestamp;
 
 #define _debug(dlevel, format, ...)                                            \
   if (debuglevel && debuglevel >= dlevel)                                      \
-  fprintf(stderr, "DEBUG[%d]: " format "\n", getpid(), ##__VA_ARGS__)
+  fprintf(stderr, ANSI_COLOR_GREEN "DEBUG[%d]: " ANSI_COLOR_RESET format "\n", \
+          getpid(), ##__VA_ARGS__)
 #define _warn(format, ...)                                                     \
-  fprintf(stderr, "WARNING[%d]: " format "\n", getpid(), ##__VA_ARGS__)
+  fprintf(stderr,                                                              \
+          ANSI_COLOR_YELLOW "WARNING[%d]: " ANSI_COLOR_RESET format "\n",      \
+          getpid(), ##__VA_ARGS__)
 #define _error(format, ...)                                                    \
-  fprintf(stderr, "ERROR[%d]: " format "\n", getpid(), ##__VA_ARGS__)
+  fprintf(stderr, ANSI_COLOR_RED "ERROR[%d]: " ANSI_COLOR_RESET format "\n",   \
+          getpid(), ##__VA_ARGS__)
 
 struct payload {
   struct timespec timestamp;
@@ -106,7 +110,7 @@ static void usage(const int rc) {
   printf("  -e, --errcolor    color\n");
   printf("  -t, --ts          "
          "enable timestamps in all outputs\n");
-  printf("  -r, --relative   "
+  printf("  -r, --relative    "
          "display timestamps as relative offsets from start time "
          "(implies --ts)\n");
   printf("  -h, --help        print this help message\n");
@@ -115,12 +119,65 @@ static void usage(const int rc) {
   exit(rc);
 }
 
+void send_msg_payload(int pipe_fd, struct payload *msg_payload) {
+  // Send message payload to parent process being careful to
+  // ensure that the entire message is sent.
+  _debug(1, "Sending msg_payload '%s' to parent process, timestamp: %ld.%09ld",
+         msg_payload->text, msg_payload->timestamp.tv_sec,
+         msg_payload->timestamp.tv_nsec);
+  ssize_t written = write(pipe_fd, msg_payload, sizeof(*msg_payload));
+  while (written < sizeof(*msg_payload)) {
+    if (written == -1) {
+      if (errno == EAGAIN) {
+        // If the pipe is full, keep trying to write
+        // until it is available
+        usleep(1000);
+        written = write(pipe_fd, msg_payload, sizeof(*msg_payload));
+      } else {
+        perror("Error writing to pipe");
+        break;
+      }
+    } else {
+      // If only part of the message was written,
+      // try again to write the rest of it
+      ssize_t more_written =
+          write(pipe_fd, msg_payload + written, sizeof(*msg_payload) - written);
+      if (more_written == -1) {
+        if (errno == EAGAIN) {
+          // If the pipe is full, keep trying to write
+          // until it is available
+          while (more_written == -1 && errno == EAGAIN) {
+            usleep(1000);
+            more_written = write(pipe_fd, msg_payload + written,
+                                 sizeof(*msg_payload) - written);
+          }
+          break;
+        } else {
+          perror("Error writing to pipe");
+          break;
+        }
+      }
+      written += more_written;
+    }
+  }
+}
+
 void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
   char buffer[BUFFER_SIZE];
-  struct pollfd pfd = {.fd = fd, .events = POLLIN | POLLHUP};
-  struct payload msg_payload;
+  ssize_t bytes_read;
+  size_t line_length = 0;
 
   // TODO: set argv[0] to incorporate prefix
+
+  // Set the read-side file descriptor to line-buffered mode using setvbuf
+  FILE *stream = fdopen(fd, "r");
+  if (!stream) {
+    perror("fdopen failed");
+    exit(EXIT_FAILURE);
+  }
+  setvbuf(stream, NULL, _IOLBF, 0); // Line buffering
+
+  struct payload msg_payload;
 
   // Set pipe_fd to non-blocking mode
   int flags = fcntl(pipe_fd, F_GETFL, 0);
@@ -140,86 +197,47 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
     exit(EXIT_FAILURE);
   }
 
-  while (1) {
-    int poll_result = poll(&pfd, 1, -1);
-    if (poll_result == -1) {
-      if (errno == EINTR)
-        continue;
-      perror("Error polling pipe");
-      break;
+  while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+    // Get the current time with nanosecond precision. Note that if a
+    // line is split across multiple reads, the timestamp will be set
+    // to the time that the _last_ read is completed.
+    if (clock_gettime(CLOCK_REALTIME, &msg_payload.timestamp) == -1) {
+      perror("clock_gettime");
+      exit(EXIT_FAILURE);
     }
 
-    if (pfd.revents & POLLHUP) {
-      // Pipe has been closed, exit the loop
-      break;
+    buffer[bytes_read] = '\0'; // Null-terminate the buffer
+    _debug(1, "Read %ld bytes from fd: '%s' timestamp: %ld.%09ld", bytes_read,
+           buffer, msg_payload.timestamp.tv_sec, msg_payload.timestamp.tv_nsec);
+
+    size_t i = 0;
+    while (i < bytes_read) {
+      if (line_length >= BUFFER_SIZE - 1) {
+        fprintf(stderr, "Line too long, truncating.\n");
+        msg_payload.text[BUFFER_SIZE - 1] = '\0';
+        send_msg_payload(pipe_fd, &msg_payload);
+        line_length = 0;
+      }
+
+      if (buffer[i] == '\n') {
+        msg_payload.text[line_length] = '\0';
+        send_msg_payload(pipe_fd, &msg_payload);
+        line_length = 0; // Reset for the next line
+      } else {
+        msg_payload.text[line_length++] = buffer[i];
+      }
+      i++;
     }
+  }
 
-    if (pfd.revents & POLLIN) {
-      ssize_t count = read(fd, buffer, BUFFER_SIZE - 1);
-      if (count == 0) {
-        // EOF detected, exit the loop
-        break;
-      }
-      if (count < 0) {
-        if (errno == EINTR)
-          continue;
-        perror("Error reading from pipe");
-        break;
-      }
+  if (bytes_read < 0) {
+    fprintf(stderr, "Error reading file descriptor: %s\n", strerror(errno));
+  }
 
-      buffer[count] = '\0';
-      char *line = strtok(buffer, "\n");
-      while (line) {
-        // Get the current time with nanosecond precision
-        if (clock_gettime(CLOCK_REALTIME, &msg_payload.timestamp) == -1) {
-          perror("clock_gettime");
-          exit(EXIT_FAILURE);
-        }
-
-        // Copy the line into the payload
-        snprintf(msg_payload.text, BUFFER_SIZE, "%s", line);
-
-        // Send message to parent process being careful to ensure
-        // that the entire message is sent.
-        ssize_t written = write(pipe_fd, &msg_payload, sizeof(msg_payload));
-        while (written < sizeof(msg_payload)) {
-          if (written == -1) {
-            if (errno == EAGAIN) {
-              // If the pipe is full, keep trying to write
-              // until it is available
-              usleep(1000);
-              written = write(pipe_fd, &msg_payload, sizeof(msg_payload));
-            } else {
-              perror("Error writing to pipe");
-              break;
-            }
-          } else {
-            // If only part of the message was written,
-            // try again to write the rest of it
-            ssize_t more_written = write(pipe_fd, &msg_payload + written,
-                                         sizeof(msg_payload) - written);
-            if (more_written == -1) {
-              if (errno == EAGAIN) {
-                // If the pipe is full, keep trying to write
-                // until it is available
-                while (more_written == -1 && errno == EAGAIN) {
-                  usleep(1000);
-                  more_written = write(pipe_fd, &msg_payload + written,
-                                       sizeof(msg_payload) - written);
-                }
-                break;
-              } else {
-                perror("Error writing to pipe");
-                break;
-              }
-            }
-            written += more_written;
-          }
-        }
-
-        line = strtok(NULL, "\n");
-      }
-    }
+  // Handle any remaining data in the buffer that doesn't end with a newline
+  if (line_length > 0) {
+    msg_payload.text[line_length] = '\0';
+    send_msg_payload(pipe_fd, &msg_payload);
   }
 }
 
@@ -326,8 +344,9 @@ int main(int argc, char *argv[]) {
   int opt;
   int option_index = 0;
   const char *logfile_name = NULL;
-  const char *out_color = "";                             // No color for stdout
-  const char *err_color = ANSI_BOLD ANSI_COLOR_AMBER_400; // Default for stderr
+  const char *out_color = ""; // No color for stdout
+  const char *err_color =
+      ANSI_COLOR_BOLD ANSI_COLOR_YELLOW; // Default for stderr
   int color_light = 0;
   int color_dark = 0;
   int color_bold = 0;
@@ -355,18 +374,18 @@ int main(int argc, char *argv[]) {
                             &option_index)) != -1) {
     switch (opt) {
     case 'l':
-      err_color = ANSI_BOLD ANSI_COLOR_AMBER_400; // for light background
-      ts_color = ANSI_COLOR_INDIGO_400;           // Timestamp color
+      err_color = ANSI_COLOR_BOLD ANSI_COLOR_MAGENTA; // for light background
+      ts_color = ANSI_COLOR_BLUE;                     // Timestamp color
       color_light = 1;
       break;
     case 'd':
-      err_color = ANSI_BOLD ANSI_COLOR_YELLOW_300; // for dark background
-      ts_color = ANSI_COLOR_INDIGO_300;            // Timestamp color
+      err_color = ANSI_COLOR_BOLD ANSI_COLOR_YELLOW; // for dark background
+      ts_color = ANSI_COLOR_CYAN;                    // Timestamp color
       color_dark = 1;
       break;
     case 'b':
-      err_color = ANSI_BOLD; // ANSI bold for stderr
-      ts_color = "";         // Timestamp color
+      err_color = ANSI_COLOR_BOLD; // ANSI bold for stderr
+      ts_color = "";               // Timestamp color
       color_bold = 1;
       break;
     case 'f':
