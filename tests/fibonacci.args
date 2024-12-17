@@ -1,1 +1,1 @@
--- sh -c 'n=100; x=0; y=1; z=$x; function out() { if [ `expr $1 % 2` -eq 0 ]; then echo "$1: evens to stdout"; else echo "$1: odds to stderr" 1>&2; fi }; for i in `seq 1 $n`; do x=`expr $x + $y`; y=$z; z=$x; out $x; done'
+-- bash -c 'n=100; x=0; y=1; z=$x; function out() { if [ `expr $1 % 2` -eq 0 ]; then echo "$1: evens to stdout"; else echo "$1: odds to stderr" 1>&2; fi }; for i in `seq 1 $n`; do x=`expr $x + $y`; y=$z; z=$x; out $x; done'

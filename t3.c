@@ -89,8 +89,7 @@ struct message *stderr_head = NULL;
 struct message *stderr_tail = NULL;
 int stderr_queuelen = 0;
 
-// Mutex for thread-safe access to the queues
-// TODO: remove because we are not using threads
+
 
 static void usage(const int rc) {
   printf("Usage: t3 [OPTION] FILE -- COMMAND ARGS ...\n");
