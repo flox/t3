@@ -142,3 +142,13 @@ This project is developed and maintained with Flox.
 
 1. `flox activate`
 2. `make`
+
+## Continuous Integration
+
+The project uses GitHub Actions for CI with the following checks:
+- Building with multiple GCC versions
+- Running the test suite
+- Static analysis with clang-tidy
+- Building in Flox environment
+
+All checks must pass before merging pull requests.

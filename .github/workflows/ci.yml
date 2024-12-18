@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gcc: ['9', '10', '11']
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y help2man clang-tidy
+
+      - name: Build
+        run: make
+
+      - name: Run tests
+        run: make test
+
+      - name: Lint
+        run: make lint
+
+  flox-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flox
+        uses: flox/install-flox-action@v2
+
+      - name: Build and Test with Flox
+        run: |
+          flox activate -- bash -c "make && make test"
