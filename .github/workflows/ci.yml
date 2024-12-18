@@ -37,12 +37,6 @@ jobs:
       - name: Install Flox
         uses: flox/install-flox-action@v2
 
-      - name: Build with Flox
+      - name: Build and Test with Flox
         run: |
-          flox activate
-          make
-
-      - name: Test with Flox
-        run: |
-          flox activate
-          make test
+          flox activate -- bash -c "make && make test"
