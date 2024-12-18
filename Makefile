@@ -35,10 +35,13 @@ $(MAN1DIR)/%: %
 	cp $< $@
 	chmod 444 $@
 
-.PHONY: all install clean
+.PHONY: all install lint clean
 all: $(BIN) $(MAN1)
 
 install: $(INSTBIN) $(INSTMAN1)
+
+lint: $(BIN).c
+	clang-tidy $< -- $(CFLAGS)
 
 clean:
 	-rm -f $(BIN) $(MAN1)
