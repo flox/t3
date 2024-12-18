@@ -9,13 +9,12 @@ version = 1
 # List packages you wish to install in your environment inside
 # the `[install]` section.
 [install]
+clang-tools.pkg-path = "clang-tools"
+entr.pkg-path = "entr"
 gcc.pkg-path = "gcc"
 gnumake.pkg-path = "gnumake"
-entr.pkg-path = "entr"
-help2man.pkg-path = "help2man"
 gdb.pkg-path = "gdb"
-# hello.pkg-path = "hello"
-# nodejs = { version = "^20.15.1", pkg-path = "nodejs" }
+help2man.pkg-path = "help2man"
 
 # Set environment variables in the `[vars]` section. These variables may not
 # reference one another, and are added to the environment without first
