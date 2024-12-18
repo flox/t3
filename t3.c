@@ -185,7 +185,9 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
 
   // Send a message to the parent process to indicate that the child
   // process has started
-  snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix);
+  if (snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix) >= BUFFER_SIZE) {
+      _error("Message truncated in timestamp_and_send");
+  }
   msg_payload.timestamp.tv_sec = 0;
   msg_payload.timestamp.tv_nsec = 0;
   ssize_t written = write(pipe_fd, &msg_payload, sizeof(msg_payload));
@@ -307,8 +309,10 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       int hours = elapsed_sec / 3600;
       int minutes = (elapsed_sec % 3600) / 60;
       int seconds = elapsed_sec % 60;
-      sprintf(timestamp, "%02d:%02d:%02d.%06ld ", hours, minutes, seconds,
-              (elapsed_nsec / 1000));
+      if (snprintf(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%06ld ", hours, minutes, seconds,
+              (elapsed_nsec / 1000)) >= sizeof(timestamp)) {
+          _error("Timestamp truncated in process_msg_payload");
+      }
     } else {
       struct tm *time_info = localtime(&msg_payload->timestamp.tv_sec);
       if (!time_info) {
@@ -319,8 +323,12 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       // First write the time in HH:MM:SS format
       strftime(timestamp, sizeof(timestamp), "%H:%M:%S", time_info);
       // Then append the nanoseconds and a space
-      sprintf(timestamp + strlen(timestamp), ".%06ld ",
-              msg_payload->timestamp.tv_nsec / 1000);
+      size_t current_len = strlen(timestamp);
+      size_t remaining = sizeof(timestamp) - current_len;
+      if (snprintf(timestamp + current_len, remaining, ".%06ld ",
+              msg_payload->timestamp.tv_nsec / 1000) >= remaining) {
+          _error("Nanoseconds truncated in process_msg_payload");
+      }
     }
   } else {
     // Make sure timestamp is empty
