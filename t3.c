@@ -185,8 +185,9 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
 
   // Send a message to the parent process to indicate that the child
   // process has started
-  if (snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix) >= BUFFER_SIZE) { // NOLINT
-      _error("Message truncated in timestamp_and_send");
+  if (snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix) >=
+      BUFFER_SIZE) { // NOLINT
+    _error("Message truncated in timestamp_and_send");
   }
   msg_payload.timestamp.tv_sec = 0;
   msg_payload.timestamp.tv_nsec = 0;
@@ -309,9 +310,10 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       int hours = elapsed_sec / 3600;
       int minutes = (elapsed_sec % 3600) / 60;
       int seconds = elapsed_sec % 60;
-      if (snprintf(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%06ld ", hours, minutes, seconds, // NOLINT
-              (elapsed_nsec / 1000)) >= sizeof(timestamp)) {
-          _error("Timestamp truncated in process_msg_payload");
+      if (snprintf(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%06ld ", hours,
+                   minutes, seconds, // NOLINT
+                   (elapsed_nsec / 1000)) >= sizeof(timestamp)) {
+        _error("Timestamp truncated in process_msg_payload");
       }
     } else {
       struct tm *time_info = localtime(&msg_payload->timestamp.tv_sec);
@@ -326,8 +328,8 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       size_t current_len = strlen(timestamp);
       size_t remaining = sizeof(timestamp) - current_len;
       if (snprintf(timestamp + current_len, remaining, ".%06ld ", // NOLINT
-              msg_payload->timestamp.tv_nsec / 1000) >= remaining) {
-          _error("Nanoseconds truncated in process_msg_payload");
+                   msg_payload->timestamp.tv_nsec / 1000) >= remaining) {
+        _error("Nanoseconds truncated in process_msg_payload");
       }
     }
   } else {
@@ -607,9 +609,9 @@ int main(int argc, char *argv[]) {
   struct pollfd pfds[2];
   nfds_t num_open_fds = 2; // We start with two open file descriptors
   pfds[0].fd = stdout_msg_pipe[0];
-  pfds[0].events = POLLIN;
+  pfds[0].events = POLLIN | POLLHUP;
   pfds[1].fd = stderr_msg_pipe[0];
-  pfds[1].events = POLLIN;
+  pfds[1].events = POLLIN | POLLHUP;
 
   int loopcount = 0;
   int ms_delta = 0;
@@ -650,7 +652,13 @@ int main(int argc, char *argv[]) {
             msg->msg_payload = msg_payload;
             push(&stdout_head, &stdout_tail, msg, &stdout_queuelen);
           } else {
-            perror("read(stdout_msg_pipe[0])");
+            if (pfds[0].revents & POLLHUP) {
+              // POLLIN and POLLHUP both set, but reads are failing
+              // so stop polling for POLLIN events.
+              pfds[0].events = POLLHUP;
+            } else {
+              perror("read(stdout_msg_pipe[0])");
+            }
           }
         } else if (pfds[0].revents & POLLHUP) {
           _debug(2, "closing stdout_msg_pipe[0]");
@@ -669,7 +677,13 @@ int main(int argc, char *argv[]) {
             msg->msg_payload = msg_payload;
             push(&stderr_head, &stderr_tail, msg, &stderr_queuelen);
           } else {
-            perror("read(stderr_msg_pipe[0])");
+            if (pfds[1].revents & POLLHUP) {
+              // POLLIN and POLLHUP both set, but reads are failing
+              // so stop polling for POLLIN events.
+              pfds[1].events = POLLHUP;
+            } else {
+              perror("read(stderr_msg_pipe[0])");
+            }
           }
         } else if (pfds[1].revents & POLLHUP) {
           _debug(2, "closing stderr_msg_pipe[0]");
