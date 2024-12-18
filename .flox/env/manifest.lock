@@ -3,6 +3,9 @@
   "manifest": {
     "version": 1,
     "install": {
+      "clang-tools": {
+        "pkg-path": "clang-tools"
+      },
       "entr": {
         "pkg-path": "entr"
       },
@@ -44,6 +47,126 @@
     }
   },
   "packages": [
+    {
+      "attr_path": "clang-tools",
+      "broken": false,
+      "derivation": "/nix/store/pwc5pgfqks7iqw8m2nnn69r3j25nh40a-clang-tools-14.0.6.drv",
+      "description": "Standalone command line tools for C++ development",
+      "install_id": "clang-tools",
+      "license": "NCSA",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "name": "clang-tools-14.0.6",
+      "pname": "clang-tools",
+      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "rev_count": 439146,
+      "rev_date": "2023-01-02T00:06:23Z",
+      "scrape_date": "2024-08-16T02:13:46Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "14.0.6",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/xy9qzq18wwhg0qxx2lb4r8dgwg0fi339-clang-tools-14.0.6"
+      },
+      "system": "aarch64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "clang-tools",
+      "broken": false,
+      "derivation": "/nix/store/b25f49gzk6qmgaydabq3y7j4pxvkj53c-clang-tools-14.0.6.drv",
+      "description": "Standalone command line tools for C++ development",
+      "install_id": "clang-tools",
+      "license": "NCSA",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "name": "clang-tools-14.0.6",
+      "pname": "clang-tools",
+      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "rev_count": 439146,
+      "rev_date": "2023-01-02T00:06:23Z",
+      "scrape_date": "2024-08-16T02:13:46Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "14.0.6",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/z1v01dxqhz52mpvdska03xnwy807p0cf-clang-tools-14.0.6"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "clang-tools",
+      "broken": false,
+      "derivation": "/nix/store/g0rm69l73sglgr9lkdnjyxgpy4vn5ihn-clang-tools-14.0.6.drv",
+      "description": "Standalone command line tools for C++ development",
+      "install_id": "clang-tools",
+      "license": "NCSA",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "name": "clang-tools-14.0.6",
+      "pname": "clang-tools",
+      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "rev_count": 439146,
+      "rev_date": "2023-01-02T00:06:23Z",
+      "scrape_date": "2024-08-16T02:13:46Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "14.0.6",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/g836dc5fnknavcz492ahaszxn7rpf26d-clang-tools-14.0.6"
+      },
+      "system": "x86_64-darwin",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "clang-tools",
+      "broken": false,
+      "derivation": "/nix/store/czdlvvgsd2kbb2wp5plalyn6qdfq9yf9-clang-tools-14.0.6.drv",
+      "description": "Standalone command line tools for C++ development",
+      "install_id": "clang-tools",
+      "license": "NCSA",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "name": "clang-tools-14.0.6",
+      "pname": "clang-tools",
+      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
+      "rev_count": 439146,
+      "rev_date": "2023-01-02T00:06:23Z",
+      "scrape_date": "2024-08-16T02:13:46Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "14.0.6",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/kriqlj6ivymm6mhkiqhmvi4l4hggnwa1-clang-tools-14.0.6"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
     {
       "attr_path": "entr",
       "broken": false,
