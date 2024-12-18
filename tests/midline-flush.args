@@ -1,1 +1,1 @@
--- tests/midline-flush
+-- sh -c 'for i in `seq 1 10`; do tests/midline-flush; done'

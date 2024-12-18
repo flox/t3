@@ -640,7 +640,7 @@ int main(int argc, char *argv[]) {
                pfds[0].revents & POLLIN, pfds[0].revents & POLLPRI,
                pfds[0].revents & POLLOUT, pfds[0].revents & POLLERR,
                pfds[0].revents & POLLHUP, pfds[0].revents & POLLNVAL);
-        if ((pfds[0].revents & POLLIN) && !(pfds[0].revents & POLLHUP)) {
+        if (pfds[0].revents & POLLIN) {
           _debug(2, "detected input on stdout_msg_pipe[0]");
           struct payload *msg_payload = malloc(sizeof(struct payload));
           if (read(stdout_msg_pipe[0], msg_payload, sizeof(struct payload)) >
@@ -659,7 +659,7 @@ int main(int argc, char *argv[]) {
           num_open_fds--;
           waitpid(stdout_worker, NULL, WNOHANG);
         }
-        if ((pfds[1].revents & POLLIN) && !(pfds[1].revents & POLLHUP)) {
+        if (pfds[1].revents & POLLIN) {
           _debug(2, "detected input on stderr_msg_pipe[0]");
           struct payload *msg_payload = malloc(sizeof(struct payload));
           if (read(stderr_msg_pipe[0], msg_payload, sizeof(struct payload)) >
