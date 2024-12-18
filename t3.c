@@ -89,8 +89,6 @@ struct message *stderr_head = NULL;
 struct message *stderr_tail = NULL;
 int stderr_queuelen = 0;
 
-
-
 static void usage(const int rc) {
   printf("Usage: t3 [OPTION] FILE -- COMMAND ARGS ...\n");
   printf("Invoke provided command and write its colorized, "
