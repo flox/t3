@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Flox
-        uses: determinatesystems/flox-install-action@v1
+        uses: DeterminateSystems/flox-install-action@v1
 
       - name: Build with Flox
         run: |
