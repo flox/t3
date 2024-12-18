@@ -1,10 +1,9 @@
-
 .DEFAULT_GOAL = all
 
 NAME = t3
 VERSION = 1.0.0
 PREFIX ?= /usr/local
-CFLAGS = -Wall -g -DVERSION='"$(VERSION)"'
+CFLAGS = -Wall -g -DVERSION='"$(VERSION)"' -std=c11 -I./include
 
 BINDIR = $(PREFIX)/bin
 BIN = $(NAME)

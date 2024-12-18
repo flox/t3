@@ -20,6 +20,9 @@
  * to the provided filename and to its own stdout and stderr streams.
  */
 
+#define _XOPEN_SOURCE 700
+#define _POSIX_C_SOURCE 200809L
+
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -289,7 +292,7 @@ void shift(struct message **head, struct message **tail, int *queuelen) {
 
 void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
                          struct payload *msg_payload) {
-  // Write stderr message if only stderr is ready
+  int n;  // For snprintf return value checks
   char timestamp[100];
   if (timestamp_enabled) {
     if (relative_timestamps) {
@@ -307,8 +310,12 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       int hours = elapsed_sec / 3600;
       int minutes = (elapsed_sec % 3600) / 60;
       int seconds = elapsed_sec % 60;
-      sprintf(timestamp, "%02d:%02d:%02d.%06ld ", hours, minutes, seconds,
+      int n = snprintf(timestamp, sizeof(timestamp), "%02d:%02d:%02d.%06ld ", hours, minutes, seconds,
               (elapsed_nsec / 1000));
+      if (n < 0 || n >= sizeof(timestamp)) {
+          fprintf(stderr, "Error: Timestamp truncated in process_msg_payload (relative)\n");
+          exit(EXIT_FAILURE);
+      }
     } else {
       struct tm *time_info = localtime(&msg_payload->timestamp.tv_sec);
       if (!time_info) {
@@ -319,8 +326,12 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
       // First write the time in HH:MM:SS format
       strftime(timestamp, sizeof(timestamp), "%H:%M:%S", time_info);
       // Then append the nanoseconds and a space
-      sprintf(timestamp + strlen(timestamp), ".%06ld ",
+      n = snprintf(timestamp + strlen(timestamp), sizeof(timestamp) - strlen(timestamp), ".%06ld ",
               msg_payload->timestamp.tv_nsec / 1000);
+      if (n < 0 || n >= (sizeof(timestamp) - strlen(timestamp))) {
+          fprintf(stderr, "Error: Timestamp truncated in process_msg_payload (absolute)\n");
+          exit(EXIT_FAILURE);
+      }
     }
   } else {
     // Make sure timestamp is empty
