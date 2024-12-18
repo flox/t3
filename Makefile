@@ -87,10 +87,7 @@ define TEST_template =
 	@if [ -e $$(@D).log ]; then \
 	    cmp $$(TESTTMPDIR)/$(testname).log $$(@D).log || ( \
 	        echo "Failed test $$(@D)"; \
-	        echo "Was expecting on STDOUT:"; \
-	        cat $$(@D).log; \
-	        echo "Observed on STDOUT:"; \
-	        cat $$(TESTTMPDIR)/$(testname).log; \
+		diff -u $$(@D).log $$(TESTTMPDIR)/$(testname).log; \
 	        exit 1; \
 	    ); \
 	elif [ -s $$(TESTTMPDIR)/$(testname).log ]; then \
@@ -104,10 +101,7 @@ define TEST_template =
 	@if [ -e $$(@D).out ]; then \
 	    cmp $$(TESTTMPDIR)/$(testname).out $$(@D).out || ( \
 	        echo "Failed test $$(@D)"; \
-	        echo "Was expecting on STDOUT:"; \
-	        cat $$(@D).out; \
-	        echo "Observed on STDOUT:"; \
-	        cat $$(TESTTMPDIR)/$(testname).out; \
+		diff -u $$(@D).out $$(TESTTMPDIR)/$(testname).out; \
 	        exit 1; \
 	    ); \
 	elif [ -s $$(TESTTMPDIR)/$(testname).out ]; then \
@@ -121,10 +115,7 @@ define TEST_template =
 	@if [ -e $$(@D).err ]; then \
 	    cmp $$(TESTTMPDIR)/$(testname).err $$(@D).err || ( \
 	        echo "Failed test $$(@D)"; \
-	        echo "Was expecting on STDERR:"; \
-	        cat $$(@D).err; \
-	        echo "Observed on STDERR:"; \
-	        cat $$(TESTTMPDIR)/$(testname).err; \
+		diff -u $$(@D).err $$(TESTTMPDIR)/$(testname).err; \
 	        exit 1; \
 	    ); \
 	elif [ -s $$(TESTTMPDIR)/$(testname).err ]; then \
