@@ -39,9 +39,6 @@
     "build": {
       "t3": {
         "command": "  make\n  make test\n  make install PREFIX=$out\n",
-        "files": null,
-        "runtime-packages": null,
-        "systems": null,
         "sandbox": "pure"
       }
     }

@@ -16,11 +16,13 @@ int main() {
     fflush(stdout);
     fflush(stderr);
     goodbye(stderr);
-    usleep(30); // It only takes a millisecond to give stderr a head start
-                // but we'll give it thirty to avoid false positives where
-                // the first line is written to stdout.
     goodbye(stdout);
     fflush(stderr);
+    usleep(10); // It only takes a millisecond to give stderr a head start
+                // but we'll give it ten to avoid false positives where the
+                // first line is written to stdout.
     fflush(stdout);
+    usleep(10); // Sleep once more to ensure that stdout has a chance to
+                // flush its buffer before the subsequent test runs.
     return 0;
 }
