@@ -18,7 +18,7 @@ int main() {
     goodbye(stderr);
     usleep(30); // It only takes a millisecond to give stderr a head start
                 // but we'll give it thirty to avoid false positives where
-	        // the first line is written to stdout.
+                // the first line is written to stdout.
     goodbye(stdout);
     fflush(stderr);
     fflush(stdout);
