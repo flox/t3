@@ -6,9 +6,6 @@
       "clang-tools": {
         "pkg-path": "clang-tools"
       },
-      "entr": {
-        "pkg-path": "entr"
-      },
       "gcc": {
         "pkg-path": "gcc"
       },
@@ -39,6 +36,7 @@
     "build": {
       "t3": {
         "command": "  make\n  make test\n  make install PREFIX=$out\n",
+        "runtime-packages": [],
         "sandbox": "pure"
       }
     }
@@ -165,126 +163,6 @@
       "priority": 5
     },
     {
-      "attr_path": "entr",
-      "broken": false,
-      "derivation": "/nix/store/2m9kxlvcfm29ry5c8wwxjz6m7idkjv6j-entr-5.2.drv",
-      "description": "Run arbitrary commands when files change",
-      "install_id": "entr",
-      "license": "ISC",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "entr-5.2",
-      "pname": "entr",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "5.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/w2zxqvwjq135nx9spsji0xjqpb84y0dm-entr-5.2"
-      },
-      "system": "aarch64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "entr",
-      "broken": false,
-      "derivation": "/nix/store/3wbgs8gshr35bkiv5pr2hzjbib5s58nh-entr-5.2.drv",
-      "description": "Run arbitrary commands when files change",
-      "install_id": "entr",
-      "license": "ISC",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "entr-5.2",
-      "pname": "entr",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "5.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/yqm69pda8rl4bbs02vix5h2vk86wwqqd-entr-5.2"
-      },
-      "system": "aarch64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "entr",
-      "broken": false,
-      "derivation": "/nix/store/jdafsf78g5qvicdyc6j63ar7brwph91c-entr-5.2.drv",
-      "description": "Run arbitrary commands when files change",
-      "install_id": "entr",
-      "license": "ISC",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "entr-5.2",
-      "pname": "entr",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "5.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/q2j2m17an7b1inqzdm0js2r054ji5n9j-entr-5.2"
-      },
-      "system": "x86_64-darwin",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
-      "attr_path": "entr",
-      "broken": false,
-      "derivation": "/nix/store/yabgf5jhca8czd150jcmv9rss4nrkx66-entr-5.2.drv",
-      "description": "Run arbitrary commands when files change",
-      "install_id": "entr",
-      "license": "ISC",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "entr-5.2",
-      "pname": "entr",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
-      "stabilities": [
-        "staging",
-        "unstable"
-      ],
-      "unfree": false,
-      "version": "5.2",
-      "outputs_to_install": [
-        "out"
-      ],
-      "outputs": {
-        "out": "/nix/store/xvzmsmjk8lgzdbzach38za42v5pz65qa-entr-5.2"
-      },
-      "system": "x86_64-linux",
-      "group": "toplevel",
-      "priority": 5
-    },
-    {
       "attr_path": "gcc",
       "broken": false,
       "derivation": "/nix/store/5afn4l8q72a3cxl7bfcz0g1lhjpsfpni-gcc-wrapper-11.3.0.drv",
@@ -303,10 +181,10 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "wrapper-11.3.0",
+      "version": "11.3.0",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/ihj6xpggw8cy9gzq1pqwk2353jyvxa77-gcc-wrapper-11.3.0-info",
@@ -336,10 +214,10 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "wrapper-9.5.0",
+      "version": "9.5.0",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/k280mzgbhda3la8qp9jvfgm71rfvqi8x-gcc-wrapper-9.5.0-info",
@@ -369,10 +247,10 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "wrapper-11.3.0",
+      "version": "11.3.0",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/yih14rjv4rgmg4n76ljgwy848mr1p8hp-gcc-wrapper-11.3.0-info",
@@ -402,10 +280,10 @@
         "unstable"
       ],
       "unfree": false,
-      "version": "wrapper-11.3.0",
+      "version": "11.3.0",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/mhyxwk72p093hpv563cj1rmbpfmhpw8a-gcc-wrapper-11.3.0-info",
@@ -557,8 +435,8 @@
       "unfree": false,
       "version": "4.4",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/xjpcray0p1zrpa9sadjcp7d7nzzlv21i-gnumake-4.4-info",
@@ -590,8 +468,8 @@
       "unfree": false,
       "version": "4.4",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "debug": "/nix/store/37a9n7r9zn3szhgz9dgr2n7h2bwhs715-gnumake-4.4-debug",
@@ -624,8 +502,8 @@
       "unfree": false,
       "version": "4.4",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "info": "/nix/store/6z4zn7r258b5h3hqi8z9pb6vlib19mfh-gnumake-4.4-info",
@@ -657,8 +535,8 @@
       "unfree": false,
       "version": "4.4",
       "outputs_to_install": [
-        "out",
-        "man"
+        "man",
+        "out"
       ],
       "outputs": {
         "debug": "/nix/store/frnlf8flm2q084dcgm1vvkgap4j7wkw3-gnumake-4.4-debug",

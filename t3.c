@@ -20,6 +20,15 @@
  * to the provided filename and to its own stdout and stderr streams.
  */
 
+/*
+ * Include <TargetConditionals.h> to address error:
+ *   'TARGET_OS_IPHONE' is not defined
+ * https://developer.apple.com/documentation/xcode/identifying-and-addressing-framework-module-issues
+ */
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
@@ -425,7 +434,7 @@ int main(int argc, char *argv[]) {
       usage(EXIT_SUCCESS);
       break;
     case 'v':
-      printf("t3 version 1.0\n");
+      puts(VERSION);
       exit(EXIT_SUCCESS);
     case 'x':
       debuglevel++;
