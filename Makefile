@@ -1,9 +1,9 @@
-
 .DEFAULT_GOAL = all
 
 NAME = t3
+VERSION ?= unknown
 PREFIX ?= /usr/local
-CFLAGS = -Wall -g
+CFLAGS = -Wall -g -DVERSION='"$(VERSION)"'
 
 BINDIR = $(PREFIX)/bin
 BIN = $(NAME)
@@ -41,6 +41,9 @@ install: $(INSTBIN) $(INSTMAN1)
 
 lint: $(BIN).c
 	clang-tidy $< -- $(CFLAGS)
+
+format: $(BIN).c
+	clang-format -i $<
 
 clean:
 	-rm -f $(BIN) $(MAN1)
