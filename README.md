@@ -134,7 +134,7 @@ Invoke provided command and write its colorized, precise time-stamped output bot
 The easiest way to get `t3` is using Flox:
 
 1. [install Flox](https://flox.dev)
-2. invoke `flox install flox/t3`
+2. invoke `flox install t3`
 
 ## Contributing
 
