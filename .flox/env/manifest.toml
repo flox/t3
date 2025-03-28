@@ -7,13 +7,21 @@ gdb.pkg-path = "gdb"
 gnumake.pkg-path = "gnumake"
 help2man.pkg-path = "help2man"
 
+# rust tools
+cargo.pkg-path = "cargo"
+cargo.pkg-group = "rust"
+libiconv.pkg-path = "libiconv"
+libiconv.pkg-group = "rust"
+
+## rust dev tools
+rustc.pkg-path = "rustc"
+rustc.pkg-group = "rust"
+rust-analyzer.pkg-path = "rust-analyzer"
+rust-analyzer.pkg-group = "rust"
+
+
 [options]
-systems = [
-  "aarch64-darwin",
-  "aarch64-linux",
-  "x86_64-darwin",
-  "x86_64-linux",
-]
+systems = ["aarch64-darwin", "aarch64-linux", "x86_64-darwin", "x86_64-linux"]
 
 [build]
 t3.sandbox = "pure"
