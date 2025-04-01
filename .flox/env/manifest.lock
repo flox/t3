@@ -19,19 +19,13 @@
         "pkg-path": "help2man"
       }
     },
-    "hook": {},
-    "profile": {},
     "options": {
       "systems": [
         "aarch64-darwin",
         "aarch64-linux",
         "x86_64-darwin",
         "x86_64-linux"
-      ],
-      "allow": {
-        "licenses": []
-      },
-      "semver": {}
+      ]
     },
     "build": {
       "t3": {
@@ -45,28 +39,27 @@
     {
       "attr_path": "clang-tools",
       "broken": false,
-      "derivation": "/nix/store/pwc5pgfqks7iqw8m2nnn69r3j25nh40a-clang-tools-14.0.6.drv",
+      "derivation": "/nix/store/xxlypcws8vs7savka83d011sv0hrs989-clang-tools-19.1.7.drv",
       "description": "Standalone command line tools for C++ development",
       "install_id": "clang-tools",
-      "license": "NCSA",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "clang-tools-14.0.6",
+      "license": "[ NCSA, Apache-2.0, LLVM-exception ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "clang-tools-19.1.7",
       "pname": "clang-tools",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:11:35.840202Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "14.0.6",
+      "version": "19.1.7",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/xy9qzq18wwhg0qxx2lb4r8dgwg0fi339-clang-tools-14.0.6"
+        "out": "/nix/store/w9nsgv4q992vzxz0iwcd1835fdkxv9az-clang-tools-19.1.7"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
@@ -75,28 +68,27 @@
     {
       "attr_path": "clang-tools",
       "broken": false,
-      "derivation": "/nix/store/b25f49gzk6qmgaydabq3y7j4pxvkj53c-clang-tools-14.0.6.drv",
+      "derivation": "/nix/store/qkmvwif0kk4zann15wb95w6a43rxvgbv-clang-tools-19.1.7.drv",
       "description": "Standalone command line tools for C++ development",
       "install_id": "clang-tools",
-      "license": "NCSA",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "clang-tools-14.0.6",
+      "license": "[ NCSA, Apache-2.0, LLVM-exception ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "clang-tools-19.1.7",
       "pname": "clang-tools",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:30:11.979214Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "14.0.6",
+      "version": "19.1.7",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/z1v01dxqhz52mpvdska03xnwy807p0cf-clang-tools-14.0.6"
+        "out": "/nix/store/vqcmbwh0cx2vqb1apajs67jbx53j5vhp-clang-tools-19.1.7"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
@@ -105,28 +97,27 @@
     {
       "attr_path": "clang-tools",
       "broken": false,
-      "derivation": "/nix/store/g0rm69l73sglgr9lkdnjyxgpy4vn5ihn-clang-tools-14.0.6.drv",
+      "derivation": "/nix/store/h1g0jpfk1av2pw4vzm81ar2kw5ny5z8f-clang-tools-19.1.7.drv",
       "description": "Standalone command line tools for C++ development",
       "install_id": "clang-tools",
-      "license": "NCSA",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "clang-tools-14.0.6",
+      "license": "[ NCSA, Apache-2.0, LLVM-exception ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "clang-tools-19.1.7",
       "pname": "clang-tools",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:46:42.252055Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "14.0.6",
+      "version": "19.1.7",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/g836dc5fnknavcz492ahaszxn7rpf26d-clang-tools-14.0.6"
+        "out": "/nix/store/fcf94fzdv0l2g9sypm2mv6k1qi558cyn-clang-tools-19.1.7"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
@@ -135,28 +126,27 @@
     {
       "attr_path": "clang-tools",
       "broken": false,
-      "derivation": "/nix/store/czdlvvgsd2kbb2wp5plalyn6qdfq9yf9-clang-tools-14.0.6.drv",
+      "derivation": "/nix/store/ja4979wfr5dkagbiz1660zm803bjag85-clang-tools-19.1.7.drv",
       "description": "Standalone command line tools for C++ development",
       "install_id": "clang-tools",
-      "license": "NCSA",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "clang-tools-14.0.6",
+      "license": "[ NCSA, Apache-2.0, LLVM-exception ]",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "clang-tools-19.1.7",
       "pname": "clang-tools",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T02:06:54.557579Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "14.0.6",
+      "version": "19.1.7",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/kriqlj6ivymm6mhkiqhmvi4l4hggnwa1-clang-tools-14.0.6"
+        "out": "/nix/store/lksd9rqdydlm486bihrgk4yh44f03l62-clang-tools-19.1.7"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
@@ -165,31 +155,30 @@
     {
       "attr_path": "gcc",
       "broken": false,
-      "derivation": "/nix/store/5afn4l8q72a3cxl7bfcz0g1lhjpsfpni-gcc-wrapper-11.3.0.drv",
-      "description": "GNU Compiler Collection, version 11.3.0 (wrapper script)",
+      "derivation": "/nix/store/5xdzg1anggwvvbk4sd54r3bxlc59qp58-gcc-wrapper-14-20241116.drv",
+      "description": "GNU Compiler Collection, version 14-20241116 (wrapper script)",
       "install_id": "gcc",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gcc-wrapper-11.3.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gcc-wrapper-14-20241116",
       "pname": "gcc",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:11:36.306625Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "11.3.0",
+      "version": "14-20241116",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/ihj6xpggw8cy9gzq1pqwk2353jyvxa77-gcc-wrapper-11.3.0-info",
-        "man": "/nix/store/yxplny3pkidgypjwisjqw3gw37wbrz21-gcc-wrapper-11.3.0-man",
-        "out": "/nix/store/61bqab71yb3hrhbn02hmgin0nil4yml9-gcc-wrapper-11.3.0"
+        "info": "/nix/store/zq2sw0014hax6nqczp1sq0m20pnpkban-gcc-wrapper-14-20241116-info",
+        "man": "/nix/store/xis3rm992wi8z5px0109ymb0fdxwzgk2-gcc-wrapper-14-20241116-man",
+        "out": "/nix/store/szjcgfymj8fphv7fpx3c9yqgyja6269b-gcc-wrapper-14-20241116"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
@@ -198,31 +187,30 @@
     {
       "attr_path": "gcc",
       "broken": false,
-      "derivation": "/nix/store/dz66myccbf4amdf4yn9q7c2iqkpj70lc-gcc-wrapper-9.5.0.drv",
-      "description": "GNU Compiler Collection, version 9.5.0 (wrapper script)",
+      "derivation": "/nix/store/nglrkx612sf444c38sw41c6qx4wa4sak-gcc-wrapper-14-20241116.drv",
+      "description": "GNU Compiler Collection, version 14-20241116 (wrapper script)",
       "install_id": "gcc",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gcc-wrapper-9.5.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gcc-wrapper-14-20241116",
       "pname": "gcc",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:30:12.813374Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "9.5.0",
+      "version": "14-20241116",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/k280mzgbhda3la8qp9jvfgm71rfvqi8x-gcc-wrapper-9.5.0-info",
-        "man": "/nix/store/rf0pil1kn6clipl0711rm2qxcnzrrjaq-gcc-wrapper-9.5.0-man",
-        "out": "/nix/store/jm6gqq369d0vd9pz3b7swn2vyycygdb9-gcc-wrapper-9.5.0"
+        "info": "/nix/store/gn5xrhkbxpklhngr1j2limdlrpn72zv9-gcc-wrapper-14-20241116-info",
+        "man": "/nix/store/7ih0ihzdx4mx599j18sy81wp5qv4gqqz-gcc-wrapper-14-20241116-man",
+        "out": "/nix/store/6cpyrcg1zi4a89bg80vfqfdwb6nr81fr-gcc-wrapper-14-20241116"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
@@ -231,31 +219,30 @@
     {
       "attr_path": "gcc",
       "broken": false,
-      "derivation": "/nix/store/2sw6g5fblci16xp0j4sh3g722x5dgk35-gcc-wrapper-11.3.0.drv",
-      "description": "GNU Compiler Collection, version 11.3.0 (wrapper script)",
+      "derivation": "/nix/store/mrxvv7siflw143rb97h0zp37s3v9hys2-gcc-wrapper-14-20241116.drv",
+      "description": "GNU Compiler Collection, version 14-20241116 (wrapper script)",
       "install_id": "gcc",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gcc-wrapper-11.3.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gcc-wrapper-14-20241116",
       "pname": "gcc",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:46:42.718647Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "11.3.0",
+      "version": "14-20241116",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/yih14rjv4rgmg4n76ljgwy848mr1p8hp-gcc-wrapper-11.3.0-info",
-        "man": "/nix/store/blxbrsb175v4aaa3sn7xnqilsn2xygkn-gcc-wrapper-11.3.0-man",
-        "out": "/nix/store/28s9na363vchl8hmr1b4gvzq2m6v3rlc-gcc-wrapper-11.3.0"
+        "info": "/nix/store/zckp7ggmar77ckyx85s9m0qfq6bc8ki9-gcc-wrapper-14-20241116-info",
+        "man": "/nix/store/7kgks0i9lpaxyzvylckjk5myrr2la789-gcc-wrapper-14-20241116-man",
+        "out": "/nix/store/gap05kipvxfasxdaj4xmx8xyrcqq2jzq-gcc-wrapper-14-20241116"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
@@ -264,31 +251,30 @@
     {
       "attr_path": "gcc",
       "broken": false,
-      "derivation": "/nix/store/4qyq80fr6hsrz76adfkf2mbx8qwk8xr1-gcc-wrapper-11.3.0.drv",
-      "description": "GNU Compiler Collection, version 11.3.0 (wrapper script)",
+      "derivation": "/nix/store/36z307dfy7c9lawjln92m26yyy1zwgaw-gcc-wrapper-14-20241116.drv",
+      "description": "GNU Compiler Collection, version 14-20241116 (wrapper script)",
       "install_id": "gcc",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gcc-wrapper-11.3.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gcc-wrapper-14-20241116",
       "pname": "gcc",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T02:06:55.527082Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "11.3.0",
+      "version": "14-20241116",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/mhyxwk72p093hpv563cj1rmbpfmhpw8a-gcc-wrapper-11.3.0-info",
-        "man": "/nix/store/d8vilpx6dghixs0v77hvg7iryq1y9py5-gcc-wrapper-11.3.0-man",
-        "out": "/nix/store/wn31i3dzwahz6ccws8bs1nwyqrpgsvj7-gcc-wrapper-11.3.0"
+        "info": "/nix/store/8dqf93x2xbjnl0krj6qqgvrrx7nz9zhy-gcc-wrapper-14-20241116-info",
+        "man": "/nix/store/4ssb0cgvrgmpr2n97q8l305f43s28j85-gcc-wrapper-14-20241116-man",
+        "out": "/nix/store/8v6k283dpbc0qkdq81nb6mrxrgcb10i1-gcc-wrapper-14-20241116"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
@@ -297,28 +283,27 @@
     {
       "attr_path": "gdb",
       "broken": false,
-      "derivation": "/nix/store/j6zb15f1ck845baz0l3wflji9ss9n2fb-gdb-12.1.drv",
-      "description": "The GNU Project debugger",
+      "derivation": "/nix/store/mcb2cqw30mw3q7lw3y2l8cax43nvprw1-gdb-16.2.drv",
+      "description": "GNU Project debugger",
       "install_id": "gdb",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gdb-12.1",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gdb-16.2",
       "pname": "gdb",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:11:36.315404Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "12.1",
+      "version": "16.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/w3y2rwidy8pr638zgp1n09radvaiwfzx-gdb-12.1"
+        "out": "/nix/store/mvi3qy5wsx2fnpsqv7iidnrjkwhzm16y-gdb-16.2"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
@@ -327,28 +312,27 @@
     {
       "attr_path": "gdb",
       "broken": false,
-      "derivation": "/nix/store/i64hkhhjcicccfi3rvrrsd69g9wm4yri-gdb-12.1.drv",
-      "description": "The GNU Project debugger",
+      "derivation": "/nix/store/1750gcdy8nfv2ii4c5vfp74p70d2wj17-gdb-16.2.drv",
+      "description": "GNU Project debugger",
       "install_id": "gdb",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gdb-12.1",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gdb-16.2",
       "pname": "gdb",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:30:12.826700Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "12.1",
+      "version": "16.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/s9qmdfbvj6dil6mq4zxiy43vx9xvpzhs-gdb-12.1"
+        "out": "/nix/store/kxp8p6gykpyvqnbmhd39qnvffbni9f02-gdb-16.2"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
@@ -357,28 +341,27 @@
     {
       "attr_path": "gdb",
       "broken": false,
-      "derivation": "/nix/store/zfq8x47iqap1kbz22whlaxh7pkpbyxs8-gdb-12.1.drv",
-      "description": "The GNU Project debugger",
+      "derivation": "/nix/store/ibrls9dpav3afl40qj9sxb8c78zfy0j5-gdb-16.2.drv",
+      "description": "GNU Project debugger",
       "install_id": "gdb",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gdb-12.1",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gdb-16.2",
       "pname": "gdb",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:46:42.729283Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "12.1",
+      "version": "16.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/mzslc0jwp5ga4b9ymcc4i4zcaywp8w4r-gdb-12.1"
+        "out": "/nix/store/6h4wicw2jpqk6a62ggw0b5p3z4klpv68-gdb-16.2"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
@@ -387,28 +370,27 @@
     {
       "attr_path": "gdb",
       "broken": false,
-      "derivation": "/nix/store/mvkiw9zp64jmnvh3p199yw8d2adm8k0l-gdb-12.1.drv",
-      "description": "The GNU Project debugger",
+      "derivation": "/nix/store/jb5midj613z5hq5k2fc2drs52ajac3wi-gdb-16.2.drv",
+      "description": "GNU Project debugger",
       "install_id": "gdb",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gdb-12.1",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gdb-16.2",
       "pname": "gdb",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T02:06:55.543237Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "12.1",
+      "version": "16.2",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/6aclbdirjcsdi50vs6p3072vlpxc1k8f-gdb-12.1"
+        "out": "/nix/store/mmfmyi6fl8ggvhwd2nfc9ds1d71gkwz6-gdb-16.2"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
@@ -417,31 +399,30 @@
     {
       "attr_path": "gnumake",
       "broken": false,
-      "derivation": "/nix/store/n35qg5pbv3wmqqvj9nz4gly8qzvh55qm-gnumake-4.4.drv",
-      "description": "A tool to control the generation of non-source files from sources",
+      "derivation": "/nix/store/897qgbbiqskfickkdbv2k1cm6i8hx5w7-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
       "install_id": "gnumake",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gnumake-4.4",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gnumake-4.4.1",
       "pname": "gnumake",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:11:36.442208Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "4.4",
+      "version": "4.4.1",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/xjpcray0p1zrpa9sadjcp7d7nzzlv21i-gnumake-4.4-info",
-        "man": "/nix/store/fyab4b1k8kqzagvs9r0if7kajly9dfs7-gnumake-4.4-man",
-        "out": "/nix/store/7lcwpgskn4r1fjgkfiwkyc315xc89ssl-gnumake-4.4"
+        "info": "/nix/store/c5jccx4albc6g0fcxa4ghwg27945fnby-gnumake-4.4.1-info",
+        "man": "/nix/store/mvygvl0jxvci87m9j9r393ri5jsz2ybq-gnumake-4.4.1-man",
+        "out": "/nix/store/cnkfqpa3kyi3mgk0yd8lqbrdysq7j38q-gnumake-4.4.1"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
@@ -450,32 +431,31 @@
     {
       "attr_path": "gnumake",
       "broken": false,
-      "derivation": "/nix/store/4vs9cybxran0rnac8yd2d1bdxjplivrm-gnumake-4.4.drv",
-      "description": "A tool to control the generation of non-source files from sources",
+      "derivation": "/nix/store/1w8mkkppb9qx6y489fr6baf6sjcwz25f-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
       "install_id": "gnumake",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gnumake-4.4",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gnumake-4.4.1",
       "pname": "gnumake",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:30:13.282827Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "4.4",
+      "version": "4.4.1",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "debug": "/nix/store/37a9n7r9zn3szhgz9dgr2n7h2bwhs715-gnumake-4.4-debug",
-        "info": "/nix/store/0sc5a8g29a5ml5jgfr98vayvkaj4ckj0-gnumake-4.4-info",
-        "man": "/nix/store/j7n73y6zqx5782cnhpzxn1l25s5zmzzv-gnumake-4.4-man",
-        "out": "/nix/store/kh0h31n0lay6v3bk4b915wcy2brinw98-gnumake-4.4"
+        "debug": "/nix/store/yrfbzz0whhvibv18f2zb6a4l671ryrdk-gnumake-4.4.1-debug",
+        "info": "/nix/store/crfkqwk94z3mvshp5yigwgayxypr7rzr-gnumake-4.4.1-info",
+        "man": "/nix/store/a5lgpaf6b9rm3czp8bv6fw84152rsk08-gnumake-4.4.1-man",
+        "out": "/nix/store/jp96c7glhd39jvym2qxrrqbyjlbn4jg8-gnumake-4.4.1"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
@@ -484,31 +464,30 @@
     {
       "attr_path": "gnumake",
       "broken": false,
-      "derivation": "/nix/store/fad2yragqr7f7dsprgiyi2jysd5r6md8-gnumake-4.4.drv",
-      "description": "A tool to control the generation of non-source files from sources",
+      "derivation": "/nix/store/90dva6ghca1npg5qjp3l78mkl26nm8yd-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
       "install_id": "gnumake",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gnumake-4.4",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gnumake-4.4.1",
       "pname": "gnumake",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:46:42.884117Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "4.4",
+      "version": "4.4.1",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "info": "/nix/store/6z4zn7r258b5h3hqi8z9pb6vlib19mfh-gnumake-4.4-info",
-        "man": "/nix/store/gmzxym7s0g70w6cb2ldi9bmfsvl4rfbd-gnumake-4.4-man",
-        "out": "/nix/store/pj792gm7wqdy3wbrirhzhbbsygpn2cbl-gnumake-4.4"
+        "info": "/nix/store/sqzsgjrslilvvs25b1rwkxr0vqwgy4n5-gnumake-4.4.1-info",
+        "man": "/nix/store/xk3mk8ilcibjnh3yhakmii8drsxy25p3-gnumake-4.4.1-man",
+        "out": "/nix/store/yfkp7d7jj5m467qrss5p1c26j8pbqmx9-gnumake-4.4.1"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
@@ -517,32 +496,31 @@
     {
       "attr_path": "gnumake",
       "broken": false,
-      "derivation": "/nix/store/04vbhihi8pfa6phambx00lxlnvfi9mcj-gnumake-4.4.drv",
-      "description": "A tool to control the generation of non-source files from sources",
+      "derivation": "/nix/store/smmbdypz6jpj72190zwm0d65fs5hp34y-gnumake-4.4.1.drv",
+      "description": "Tool to control the generation of non-source files from sources",
       "install_id": "gnumake",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "gnumake-4.4",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "gnumake-4.4.1",
       "pname": "gnumake",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T02:06:56.078852Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "4.4",
+      "version": "4.4.1",
       "outputs_to_install": [
         "man",
         "out"
       ],
       "outputs": {
-        "debug": "/nix/store/frnlf8flm2q084dcgm1vvkgap4j7wkw3-gnumake-4.4-debug",
-        "info": "/nix/store/dqn153k8w4rs0kl3hl5cccxhfvx0ck5y-gnumake-4.4-info",
-        "man": "/nix/store/220v1rlzzn4xsgkaf5ga73faczziclkc-gnumake-4.4-man",
-        "out": "/nix/store/awhy79lar019gqmais1bbavvcl7mrs26-gnumake-4.4"
+        "debug": "/nix/store/40rj5d3igp9fb80r4pg3gnkzj338rffa-gnumake-4.4.1-debug",
+        "info": "/nix/store/33lvx5blf6ms1b6ynaln49hx1xksypxf-gnumake-4.4.1-info",
+        "man": "/nix/store/y87b22iwv64wrfpgyii4gjgbhcfqq0mi-gnumake-4.4.1-man",
+        "out": "/nix/store/k0hhyz6qnj5065vpw15m4r7nbs0mn706-gnumake-4.4.1"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
@@ -551,28 +529,27 @@
     {
       "attr_path": "help2man",
       "broken": false,
-      "derivation": "/nix/store/az3c0a7frkj66h2ki9yr4g98z8iz53nh-help2man-1.49.2.drv",
+      "derivation": "/nix/store/r5wb0hcwqqw7lvnxvqm13nkskl35mzq7-help2man-1.49.3.drv",
       "description": "Generate man pages from `--help' output",
       "install_id": "help2man",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "help2man-1.49.2",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "help2man-1.49.3",
       "pname": "help2man",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:11:36.629387Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "1.49.2",
+      "version": "1.49.3",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/l7ihzjwa7fsfqigcifpzwjx4xlqai8a0-help2man-1.49.2"
+        "out": "/nix/store/4xkf9yrp1igig98hj33rixjinnpc6h85-help2man-1.49.3"
       },
       "system": "aarch64-darwin",
       "group": "toplevel",
@@ -581,28 +558,27 @@
     {
       "attr_path": "help2man",
       "broken": false,
-      "derivation": "/nix/store/6axz8sf1jws3ccnd3wh6q868qhz58y6z-help2man-1.49.2.drv",
+      "derivation": "/nix/store/z4krqdgjkhyyvqjjlj338qxyg2z111r5-help2man-1.49.3.drv",
       "description": "Generate man pages from `--help' output",
       "install_id": "help2man",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "help2man-1.49.2",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "help2man-1.49.3",
       "pname": "help2man",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:30:13.622760Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "1.49.2",
+      "version": "1.49.3",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/j3347mg2rkbgr21siz1cfvis1mk37cvs-help2man-1.49.2"
+        "out": "/nix/store/kqwjnl307x5amhwp59wrb41l89hsn9k8-help2man-1.49.3"
       },
       "system": "aarch64-linux",
       "group": "toplevel",
@@ -611,28 +587,27 @@
     {
       "attr_path": "help2man",
       "broken": false,
-      "derivation": "/nix/store/jc9pzsjmlby95giqr1qks6frq0qd29wf-help2man-1.49.2.drv",
+      "derivation": "/nix/store/x80pakh733hq5p3qq8x6gj2vvszsyg0r-help2man-1.49.3.drv",
       "description": "Generate man pages from `--help' output",
       "install_id": "help2man",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "help2man-1.49.2",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "help2man-1.49.3",
       "pname": "help2man",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T01:46:43.074625Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "1.49.2",
+      "version": "1.49.3",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/zaqz8j319xvgykmdw7dscfgqx2ls22af-help2man-1.49.2"
+        "out": "/nix/store/mj9x38yyfywbm1g47iz1q809ppbh89fx-help2man-1.49.3"
       },
       "system": "x86_64-darwin",
       "group": "toplevel",
@@ -641,28 +616,27 @@
     {
       "attr_path": "help2man",
       "broken": false,
-      "derivation": "/nix/store/z778b4z9yfdhnl83wvc36b2fkg0d15jz-help2man-1.49.2.drv",
+      "derivation": "/nix/store/ddxa6jpd62cv8njiqqa1xl5ajy9sqlk7-help2man-1.49.3.drv",
       "description": "Generate man pages from `--help' output",
       "install_id": "help2man",
       "license": "GPL-3.0-or-later",
-      "locked_url": "https://github.com/flox/nixpkgs?rev=0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "name": "help2man-1.49.2",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=52faf482a3889b7619003c0daec593a1912fddc1",
+      "name": "help2man-1.49.3",
       "pname": "help2man",
-      "rev": "0fc9fca9c8d43edd79d33fea0dd8409d7c4580f4",
-      "rev_count": 439146,
-      "rev_date": "2023-01-02T00:06:23Z",
-      "scrape_date": "2024-08-16T02:13:46Z",
+      "rev": "52faf482a3889b7619003c0daec593a1912fddc1",
+      "rev_count": 776537,
+      "rev_date": "2025-03-30T06:12:12Z",
+      "scrape_date": "2025-04-01T02:06:56.465638Z",
       "stabilities": [
-        "staging",
         "unstable"
       ],
       "unfree": false,
-      "version": "1.49.2",
+      "version": "1.49.3",
       "outputs_to_install": [
         "out"
       ],
       "outputs": {
-        "out": "/nix/store/x6j8qlsywc5bx036w60sii1psq1nvwk8-help2man-1.49.2"
+        "out": "/nix/store/v71mzf2aphhmr03kw9rnriwdm9gvmhw9-help2man-1.49.3"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
