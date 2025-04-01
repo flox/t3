@@ -1,20 +1,20 @@
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
-[36m[0m[1m[33mHello, stderr! Goodbye, stderr![0m
-[36m[0mHello, stdout! Goodbye, stdout![0m
+[36m[0m[1m[33m1: Hello, stderr! 1: Goodbye, stderr![0m
+[36m[0m1: Hello, stdout! 1: Goodbye, stdout![0m
+[36m[0m[1m[33m2: Hello, stderr! 2: Goodbye, stderr![0m
+[36m[0m2: Hello, stdout! 2: Goodbye, stdout![0m
+[36m[0m[1m[33m3: Hello, stderr! 3: Goodbye, stderr![0m
+[36m[0m3: Hello, stdout! 3: Goodbye, stdout![0m
+[36m[0m[1m[33m4: Hello, stderr! 4: Goodbye, stderr![0m
+[36m[0m4: Hello, stdout! 4: Goodbye, stdout![0m
+[36m[0m[1m[33m5: Hello, stderr! 5: Goodbye, stderr![0m
+[36m[0m5: Hello, stdout! 5: Goodbye, stdout![0m
+[36m[0m[1m[33m6: Hello, stderr! 6: Goodbye, stderr![0m
+[36m[0m6: Hello, stdout! 6: Goodbye, stdout![0m
+[36m[0m[1m[33m7: Hello, stderr! 7: Goodbye, stderr![0m
+[36m[0m7: Hello, stdout! 7: Goodbye, stdout![0m
+[36m[0m[1m[33m8: Hello, stderr! 8: Goodbye, stderr![0m
+[36m[0m8: Hello, stdout! 8: Goodbye, stdout![0m
+[36m[0m[1m[33m9: Hello, stderr! 9: Goodbye, stderr![0m
+[36m[0m9: Hello, stdout! 9: Goodbye, stdout![0m
+[36m[0m[1m[33m10: Hello, stderr! 10: Goodbye, stderr![0m
+[36m[0m10: Hello, stdout! 10: Goodbye, stdout![0m
