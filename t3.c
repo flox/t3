@@ -498,7 +498,8 @@ int main(int argc, char *argv[]) {
 
   FILE *logfile = fopen(logfile_name, "w");
   if (!logfile) {
-    perror("Error opening logfile");
+    fprintf(stderr, "Error opening logfile %s %s\n", logfile_name,
+            strerror(errno));
     return EXIT_FAILURE;
   }
 
