@@ -7,10 +7,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#define hello(fd) fprintf(fd, "Hello, %s! ", fd == stdout ? "stdout" : "stderr")
-#define goodbye(fd) fprintf(fd, "Goodbye, %s!\n", fd == stdout ? "stdout" : "stderr")
+#define hello(fd) fprintf(fd, "%s: Hello, %s! ", argv[1], fd == stdout ? "stdout" : "stderr")
+#define goodbye(fd) fprintf(fd, "%s: Goodbye, %s!\n", argv[1], fd == stdout ? "stdout" : "stderr")
 
-int main() {
+int main(int argc, char *argv[]) {
     hello(stdout);
     hello(stderr);
     fflush(stdout);
