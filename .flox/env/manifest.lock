@@ -19,19 +19,16 @@
         "pkg-path": "help2man"
       }
     },
-    "options": {
-      "systems": [
-        "aarch64-darwin",
-        "aarch64-linux",
-        "x86_64-darwin",
-        "x86_64-linux"
-      ]
-    },
+    "options": {},
     "build": {
       "t3": {
         "command": "  make\n  make test\n  make install PREFIX=$out\n",
         "runtime-packages": [],
-        "sandbox": "pure"
+        "sandbox": "pure",
+        "version": {
+          "command": "git describe --tags --always --dirty"
+        },
+        "description": "Next generation tee with colorized output streams and precise time stamping"
       }
     }
   },
