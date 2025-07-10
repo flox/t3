@@ -7,18 +7,12 @@ gdb.pkg-path = "gdb"
 gnumake.pkg-path = "gnumake"
 help2man.pkg-path = "help2man"
 
-[options]
-systems = [
-  "aarch64-darwin",
-  "aarch64-linux",
-  "x86_64-darwin",
-  "x86_64-linux",
-]
-
-[build]
-t3.sandbox = "pure"
-t3.runtime-packages = []
-t3.command = '''
+[build.t3]
+sandbox = "pure"
+runtime-packages = []
+version.command = "git describe --tags --always --dirty"
+description = "Next generation tee with colorized output streams and precise time stamping"
+command = '''
   make
   make test
   make install PREFIX=$out
