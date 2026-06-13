@@ -34,7 +34,7 @@ $(MAN1DIR)/%: %
 	cp $< $@
 	chmod 444 $@
 
-.PHONY: all install lint clean
+.PHONY: all install lint clean stress bench
 all: $(BIN) $(MAN1)
 
 install: $(INSTBIN) $(INSTMAN1)
@@ -50,7 +50,11 @@ clean:
 
 TESTS_DIR = tests
 TESTS = $(basename $(wildcard $(TESTS_DIR)/*.args))
-TESTTMPDIR := $(shell mktemp -d)
+
+# Allocate a unique scratch-directory name but do not create it: the test
+# rules `mkdir -p $(TESTTMPDIR)` it on demand, so plain `make`/`make all`/
+# `make install` never leave an empty temp directory behind.
+TESTTMPDIR := $(shell mktemp -d -u "$${TMPDIR:-/tmp}/t3-tests.XXXXXX")
 define TEST_template =
   $(eval testname := $(notdir $(test)))
 
@@ -58,7 +62,7 @@ define TEST_template =
   $(test).sh: $(test).args
 	@mkdir -p $$(TESTTMPDIR)
 	@echo "#!/bin/sh" > $$@
-	@echo -n './$$(BIN) "$$$$1" ' >> $$@
+	@printf '%s' './$$(BIN) "$$$$1" ' >> $$@
 	@cat $(test).args >> $$@
 	@chmod +x $$@
 
@@ -141,6 +145,30 @@ $(foreach test,$(TESTS),$(eval $(call TEST_template)))
 
 # The partial write test depends on the compiled tests/midline-flush binary.
 tests/midline-flush/run: tests/midline-flush
+
+# Concurrency stress test: run a highly-threaded generator under t3 and verify
+# that no output is dropped, duplicated, or garbled.  Tunable via the command
+# line, e.g. `make stress STRESS_THREADS=32 STRESS_LINES=5000`.
+STRESS_THREADS ?= 16
+STRESS_LINES ?= 1000
+
+tests/stress: tests/stress.c
+	$(CC) $(CFLAGS) -pthread $< -o $@
+
+stress: $(BIN) tests/stress tests/run-stress tests/check-stream.awk
+	@T3=./$(BIN) STRESS_THREADS=$(STRESS_THREADS) STRESS_LINES=$(STRESS_LINES) \
+	    tests/run-stress
+
+# Run the stress test as part of the standard `make test` suite.
+test: stress
+
+# Benchmark: estimate t3's marginal per-line overhead. Manual only - not part
+# of `make test`. Tunable, e.g. `make bench COUNT=2000000 WIDTHS="32 128"`.
+tests/bench: tests/bench.c
+	$(CC) $(CFLAGS) $< -o $@
+
+bench: $(BIN) tests/bench tests/bench-overhead
+	@T3=./$(BIN) tests/bench-overhead
 
 # Once tests are complete (and successful), remove test results.
 test:

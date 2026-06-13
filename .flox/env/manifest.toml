@@ -1,4 +1,4 @@
-version = 1
+schema-version = "1.12.0"
 
 [install]
 clang-tools.pkg-path = "clang-tools"
@@ -6,6 +6,22 @@ gcc.pkg-path = "gcc"
 gdb.pkg-path = "gdb"
 gnumake.pkg-path = "gnumake"
 help2man.pkg-path = "help2man"
+apple-sdk.pkg-path = "apple-sdk"
+apple-sdk.systems = ["aarch64-darwin", "x86_64-darwin"]
+coreutils.pkg-path = "coreutils"
+
+[hook]
+# On macOS, point SDKROOT at the apple-sdk installed above so that standalone
+# tools which are not run through the Nix compiler wrapper - most notably the
+# clang-tidy invocation in `make lint` - can locate the system headers (e.g.
+# <TargetConditionals.h>). The Platforms directory only exists on Darwin, so
+# this is a no-op elsewhere and leaves the portable Makefile untouched.
+on-activate = '''
+  sdk="$FLOX_ENV/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
+  if [ -d "$sdk" ]; then
+    export SDKROOT="$sdk"
+  fi
+'''
 
 [build.t3]
 sandbox = "pure"

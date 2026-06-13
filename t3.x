@@ -25,19 +25,12 @@ colorized and timestamped renditions both to the provided filename and to its ow
 \fIstdout\fR and \fIstderr\fR streams.
 .SH OPTIONS
 [BUGS]
-By default the maximum line length is 4096 characters,
-and lines longer than this produced by the invoked command
-will be processed as multiple distinct messages.
-This does not cause any loss of data,
-but it does mean that timestamps and colorization
-may be inserted between messages
-that were originally part of a single line.
-If this is a problem for you,
-you can work around it by setting the
-.BR --nocolor
-option and not using the
-.BR --ts
-option.
+Lines are reassembled in full regardless of length, growing the
+internal buffer as needed up to a generous cap (16 MiB). A single
+line longer than that cap is forwarded in cap-sized pieces. No data
+is lost, but each piece is emitted as its own output line \(em with
+its own newline, timestamp, and color reset \(em so one input line
+longer than the cap appears as several lines in the output.
 
 This program is specifically designed for processing
 line-buffered text terminal output, so unlike

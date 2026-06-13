@@ -30,9 +30,9 @@
 #endif
 
 #include <errno.h>
-#include <fcntl.h>
 #include <getopt.h>
 #include <poll.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,9 +43,27 @@
 #include <time.h>
 #include <unistd.h>
 
-// The maximum line length supported by our line buffering
+// Size of the chunk a worker reads from the command at a time, and the
+// initial capacity of its line-assembly buffer. Lines longer than this are
+// handled by growing the buffer (see MAX_LINE_SIZE), not by splitting.
 // https://stackoverflow.com/questions/3552095/sensible-line-buffer-size-in-c
 #define BUFFER_SIZE 4096
+
+// Upper bound on a single reassembled line. A worker's line buffer grows as
+// needed up to this cap; a line longer than the cap is forwarded in cap-sized
+// pieces so that pathological input (e.g. a command emitting megabytes with no
+// newline) cannot drive unbounded memory growth.
+#define MAX_LINE_SIZE (16 * 1024 * 1024)
+
+// How long (in milliseconds) the parent holds a line in its queue before
+// emitting it.  This grace period lets a slightly-later line from the *other*
+// stream arrive so the two streams can be interleaved in timestamp order
+// rather than purely in arrival order.
+#define MESSAGE_HOLD_MS 100
+
+// How long (in milliseconds) the parent blocks in poll() waiting for the next
+// message from either worker before looping to flush any aged-out messages.
+#define POLL_TIMEOUT_MS 1000
 
 // A few ANSI color codes, see https://materialui.co/colors
 #define ANSI_COLOR_RESET "\x1b[0m"
@@ -68,10 +86,16 @@ const char *ts_color = ANSI_COLOR_CYAN; // Timestamp color
 const char *reset_color = ANSI_COLOR_RESET;
 struct timespec start_timestamp;
 
+// Diagnostic macros. Each expands to a single statement (wrapped in
+// do/while(0)) so it behaves correctly when used as the body of an
+// unbraced if/else.
 #define _debug(dlevel, format, ...)                                            \
-  if (debuglevel && debuglevel >= dlevel)                                      \
-  fprintf(stderr, ANSI_COLOR_GREEN "DEBUG[%d]: " ANSI_COLOR_RESET format "\n", \
-          getpid(), ##__VA_ARGS__)
+  do {                                                                         \
+    if (debuglevel && debuglevel >= (dlevel))                                  \
+      fprintf(stderr,                                                          \
+              ANSI_COLOR_GREEN "DEBUG[%d]: " ANSI_COLOR_RESET format "\n",     \
+              getpid(), ##__VA_ARGS__);                                        \
+  } while (0)
 #define _warn(format, ...)                                                     \
   fprintf(stderr,                                                              \
           ANSI_COLOR_YELLOW "WARNING[%d]: " ANSI_COLOR_RESET format "\n",      \
@@ -80,9 +104,27 @@ struct timespec start_timestamp;
   fprintf(stderr, ANSI_COLOR_RED "ERROR[%d]: " ANSI_COLOR_RESET format "\n",   \
           getpid(), ##__VA_ARGS__)
 
+// Wire format of one message on a worker's message pipe: a fixed header
+// followed immediately by `length` bytes of line text (no trailing NUL). Each
+// message pipe has a single writer (its worker), so frames never interleave;
+// write_full()/read_full() keep them aligned across partial transfers.
+struct msg_header {
+  struct timespec timestamp;
+  uint32_t length;
+};
+
+// Largest legitimate frame on the wire: a full header plus a maximally long
+// line. A worker never sends more than this, so the parent's read buffer
+// never needs to grow beyond it.
+#define MAX_FRAME_SIZE (sizeof(struct msg_header) + MAX_LINE_SIZE)
+
+// In-memory message held on the parent's queues. The text is stored inline as
+// a flexible array member sized to the actual line length (plus a NUL), so
+// short lines no longer pay for a fixed multi-kilobyte buffer.
 struct payload {
   struct timespec timestamp;
-  char text[BUFFER_SIZE];
+  uint32_t length;
+  char text[];
 };
 
 struct message {
@@ -98,10 +140,81 @@ struct message *stderr_head = NULL;
 struct message *stderr_tail = NULL;
 int stderr_queuelen = 0;
 
+// malloc() that aborts on failure. Allocations here are small and frequent;
+// there is nothing useful the program can do if they fail.
+static void *xmalloc(size_t size) {
+  void *ptr = malloc(size);
+  if (!ptr) {
+    perror("malloc");
+    exit(EXIT_FAILURE);
+  }
+  return ptr;
+}
+
+// realloc() that aborts on failure, with the same rationale as xmalloc().
+static void *xrealloc(void *ptr, size_t size) {
+  void *new_ptr = realloc(ptr, size);
+  if (!new_ptr) {
+    perror("realloc");
+    exit(EXIT_FAILURE);
+  }
+  return new_ptr;
+}
+
+// Write exactly `count` bytes from `buf` to `fd`, resuming after partial
+// writes and retrying when interrupted by a signal. Returns 0 on success or
+// -1 on error (with errno set). A pipe write of more than PIPE_BUF bytes is
+// not guaranteed to be atomic, so callers must never assume a single write()
+// transfers a whole message.
+static int write_full(int fd, const void *buf, size_t count) {
+  const char *cursor = buf;
+  while (count > 0) {
+    ssize_t written = write(fd, cursor, count);
+    if (written < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      return -1;
+    }
+    cursor += written;
+    count -= (size_t)written;
+  }
+  return 0;
+}
+
+// Read exactly `count` bytes from `fd` into `buf`, resuming after partial
+// reads and retrying when interrupted by a signal. Returns 1 on success,
+// 0 on a clean end-of-file that falls on a message boundary (nothing read),
+// or -1 on error or a truncated message (errno is set to 0 to distinguish a
+// short read at EOF from a genuine read() error).
+static int read_full(int fd, void *buf, size_t count) {
+  char *cursor = buf;
+  size_t remaining = count;
+  while (remaining > 0) {
+    ssize_t bytes_read = read(fd, cursor, remaining);
+    if (bytes_read < 0) {
+      if (errno == EINTR) {
+        continue;
+      }
+      return -1;
+    }
+    if (bytes_read == 0) {
+      if (remaining == count) {
+        return 0; // EOF exactly on a message boundary
+      }
+      errno = 0; // truncated message: distinguish from a read() error
+      return -1;
+    }
+    cursor += bytes_read;
+    remaining -= (size_t)bytes_read;
+  }
+  return 1;
+}
+
 static void usage(const int rc) {
   printf("Usage: t3 [OPTION] FILE -- COMMAND ARGS ...\n");
   printf("Invoke provided command and write its colorized, "
-         "precise time-stamped output both to the provided file"
+         "precise time-stamped output both to the provided file "
          "and to stdout/err.\n\n");
   printf("  -l, --light       "
          "use color scheme suitable for light backgrounds\n");
@@ -113,7 +226,10 @@ static void usage(const int rc) {
          "disable all timestamps, ANSI color and highlighting\n");
   printf("  -f, --forcecolor  "
          "enforce the use of color when not writing to a TTY\n");
-  printf("  -e, --errcolor    color\n");
+  printf("  -o, --outcolor C  "
+         "set the ANSI escape sequence used to color stdout\n");
+  printf("  -e, --errcolor C  "
+         "set the ANSI escape sequence used to color stderr\n");
   printf("  -t, --ts          "
          "enable timestamps in all outputs\n");
   printf("  -r, --relative    "
@@ -125,117 +241,94 @@ static void usage(const int rc) {
   exit(rc);
 }
 
-void send_msg_payload(int pipe_fd, struct payload *msg_payload) {
-  // Send message payload to parent process being careful to
-  // ensure that the entire message is sent.
-  _debug(1, "Sending msg_payload '%s' to parent process, timestamp: %ld.%09ld",
-         msg_payload->text, msg_payload->timestamp.tv_sec,
-         msg_payload->timestamp.tv_nsec);
-  ssize_t written = write(pipe_fd, msg_payload, sizeof(*msg_payload));
-  while (written < sizeof(*msg_payload)) {
-    if (written == -1) {
-      if (errno == EAGAIN) {
-        // If the pipe is full, keep trying to write
-        // until it is available
-        usleep(1000);
-        written = write(pipe_fd, msg_payload, sizeof(*msg_payload));
-      } else {
-        perror("Error writing to pipe");
-        break;
-      }
-    } else {
-      // If only part of the message was written,
-      // try again to write the rest of it
-      ssize_t more_written =
-          write(pipe_fd, msg_payload + written, sizeof(*msg_payload) - written);
-      if (more_written == -1) {
-        if (errno == EAGAIN) {
-          // If the pipe is full, keep trying to write
-          // until it is available
-          while (more_written == -1 && errno == EAGAIN) {
-            usleep(1000);
-            more_written = write(pipe_fd, msg_payload + written,
-                                 sizeof(*msg_payload) - written);
-          }
-          break;
-        } else {
-          perror("Error writing to pipe");
-          break;
-        }
-      }
-      written += more_written;
-    }
+// Send one variable-length frame to the parent. `buf` has room for a
+// struct msg_header reserved at the front (filled in here) followed by `len`
+// bytes of line text, so the whole frame goes out in a single write_full()
+// call - one syscall and no extra copy. Each worker owns its message pipe, so
+// the single writer keeps frames from interleaving; write_full() keeps them
+// aligned across partial writes. A write error means the parent has gone
+// away, so there is nothing left to do but exit.
+void send_line(int pipe_fd, char *buf, size_t len,
+               const struct timespec *timestamp) {
+  struct msg_header header;
+  // Zero the whole struct first so its padding bytes are not sent as
+  // uninitialized stack memory over the pipe.
+  memset(&header, 0, sizeof(header));
+  header.timestamp = *timestamp;
+  header.length = (uint32_t)len;
+  memcpy(buf, &header, sizeof(header));
+  _debug(1, "Sending %zu-byte line to parent process, timestamp: %ld.%09ld",
+         len, timestamp->tv_sec, timestamp->tv_nsec);
+  if (write_full(pipe_fd, buf, sizeof(header) + len) == -1) {
+    perror("Error writing message to pipe");
+    exit(EXIT_FAILURE);
   }
 }
 
+// Worker process body: read the raw output of the command from `fd`, split it
+// into lines, stamp each completed line with the time it was read, and forward
+// it to the parent over the message pipe `pipe_fd`. The message pipe is left in
+// its default blocking mode: if the parent falls behind, write_full() blocks
+// here, which in turn applies natural back-pressure to the command rather than
+// dropping or corrupting messages.
 void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
   char buffer[BUFFER_SIZE];
   ssize_t bytes_read;
-  size_t line_length = 0;
 
   // TODO: set argv[0] to incorporate prefix
 
-  // Set the read-side file descriptor to line-buffered mode using setvbuf
-  FILE *stream = fdopen(fd, "r");
-  if (!stream) {
-    perror("fdopen failed");
-    exit(EXIT_FAILURE);
-  }
-  setvbuf(stream, NULL, _IOLBF, 0); // Line buffering
+  // Line-assembly buffer: a struct msg_header is reserved at the front and the
+  // line text accumulates after it, so a completed line is sent with a single
+  // write (see send_line). The buffer grows as needed up to MAX_FRAME_SIZE,
+  // i.e. enough to hold the header plus a full MAX_LINE_SIZE bytes of text.
+  const size_t header_size = sizeof(struct msg_header);
+  size_t capacity = BUFFER_SIZE;
+  char *line = xmalloc(capacity);
+  size_t line_length = 0; // text bytes accumulated (excludes the header)
+  struct timespec timestamp = {0, 0};
 
-  struct payload msg_payload;
-
-  // Set pipe_fd to non-blocking mode
-  int flags = fcntl(pipe_fd, F_GETFL, 0);
-  if (flags == -1 || fcntl(pipe_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-    perror("Error setting pipe to non-blocking mode");
-    exit(EXIT_FAILURE);
-  }
-
-  // Send a message to the parent process to indicate that the child
-  // process has started
-  if (snprintf(msg_payload.text, BUFFER_SIZE, "%s started", prefix) >=
-      BUFFER_SIZE) { // NOLINT
+  // Send a zero-timestamped "<prefix> started" frame so the parent can confirm
+  // the worker is online and the message pipe is wired up correctly.
+  int started = snprintf(line + header_size, capacity - header_size,
+                         "%s started", prefix);
+  if (started < 0 || (size_t)started >= capacity - header_size) {
     _error("Message truncated in timestamp_and_send");
-  }
-  msg_payload.timestamp.tv_sec = 0;
-  msg_payload.timestamp.tv_nsec = 0;
-  ssize_t written = write(pipe_fd, &msg_payload, sizeof(msg_payload));
-  if (written < sizeof(msg_payload)) {
-    _error("Error writing to pipe from %s", prefix);
     exit(EXIT_FAILURE);
   }
+  send_line(pipe_fd, line, (size_t)started, &timestamp);
 
-  while ((bytes_read = read(fd, buffer, sizeof(buffer) - 1)) > 0) {
+  while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0) {
     // Get the current time with nanosecond precision. Note that if a
     // line is split across multiple reads, the timestamp will be set
     // to the time that the _last_ read is completed.
-    if (clock_gettime(CLOCK_REALTIME, &msg_payload.timestamp) == -1) {
+    if (clock_gettime(CLOCK_REALTIME, &timestamp) == -1) {
       perror("clock_gettime");
       exit(EXIT_FAILURE);
     }
 
-    buffer[bytes_read] = '\0'; // Null-terminate the buffer
-    _debug(1, "Read %ld bytes from fd: '%s' timestamp: %ld.%09ld", bytes_read,
-           buffer, msg_payload.timestamp.tv_sec, msg_payload.timestamp.tv_nsec);
-
-    size_t i = 0;
-    while (i < bytes_read) {
-      if (line_length >= BUFFER_SIZE - 1) {
-        fprintf(stderr, "Line too long, truncating.\n");
-        msg_payload.text[BUFFER_SIZE - 1] = '\0';
-        send_msg_payload(pipe_fd, &msg_payload);
-        line_length = 0;
-      }
-
+    for (ssize_t i = 0; i < bytes_read; i++) {
       if (buffer[i] == '\n') {
-        msg_payload.text[line_length] = '\0';
-        send_msg_payload(pipe_fd, &msg_payload);
+        send_line(pipe_fd, line, line_length, &timestamp);
         line_length = 0; // Reset for the next line
-      } else {
-        msg_payload.text[line_length++] = buffer[i];
+        continue;
       }
-      i++;
+      // Ensure room for one more text byte, growing the buffer up to
+      // MAX_FRAME_SIZE (header + MAX_LINE_SIZE bytes of text). A line whose
+      // text reaches the MAX_LINE_SIZE cap is flushed in pieces rather than
+      // truncated.
+      if (header_size + line_length + 1 > capacity) {
+        if (capacity >= MAX_FRAME_SIZE) {
+          send_line(pipe_fd, line, line_length, &timestamp);
+          line_length = 0;
+        } else {
+          capacity *= 2;
+          if (capacity > MAX_FRAME_SIZE) {
+            capacity = MAX_FRAME_SIZE;
+          }
+          line = xrealloc(line, capacity);
+        }
+      }
+      line[header_size + line_length++] = buffer[i];
     }
   }
 
@@ -245,9 +338,10 @@ void timestamp_and_send(int pipe_fd, int fd, const char *prefix) {
 
   // Handle any remaining data in the buffer that doesn't end with a newline
   if (line_length > 0) {
-    msg_payload.text[line_length] = '\0';
-    send_msg_payload(pipe_fd, &msg_payload);
+    send_line(pipe_fd, line, line_length, &timestamp);
   }
+
+  free(line);
 }
 
 int timespec_cmp(const struct timespec *a, const struct timespec *b) {
@@ -262,10 +356,8 @@ int timespec_cmp(const struct timespec *a, const struct timespec *b) {
   return 0;
 }
 
-int timespec_ms_delta(const struct timespec *a, const struct timespec *b) {
-  long diff_in_ms =
-      (a->tv_sec - b->tv_sec) * 1000 + (a->tv_nsec - b->tv_nsec) / 1000000;
-  return diff_in_ms;
+long timespec_ms_delta(const struct timespec *a, const struct timespec *b) {
+  return (a->tv_sec - b->tv_sec) * 1000 + (a->tv_nsec - b->tv_nsec) / 1000000;
 }
 
 // Function to add a message to the end of a queue
@@ -297,6 +389,151 @@ void shift(struct message **head, struct message **tail, int *queuelen) {
   // Free all memory associated with the deleted message
   free(msg_to_free->msg_payload);
   free(msg_to_free);
+}
+
+// Read and validate a worker's startup handshake: a zero-timestamped
+// "<prefix> started" frame. Returns 0 on success, -1 on any I/O error or
+// mismatch (a diagnostic is printed in the mismatch case).
+int await_worker(int fd, const char *prefix) {
+  struct msg_header header;
+  char text[64];
+  char expected[64];
+
+  int rc = read_full(fd, &header, sizeof(header));
+  if (rc != 1) {
+    // read_full signals a real read error with errno set, and a clean EOF or a
+    // truncated frame with errno == 0; only perror() in the former case so we
+    // never print a misleading "Success".
+    if (rc < 0 && errno != 0) {
+      perror("Error reading worker handshake");
+    } else {
+      fprintf(stderr, "Error: %s worker closed before completing handshake\n",
+              prefix);
+    }
+    return -1;
+  }
+  if (header.length >= sizeof(text) ||
+      read_full(fd, text, header.length) != 1) {
+    fprintf(stderr, "Error: malformed handshake from %s worker\n", prefix);
+    return -1;
+  }
+  text[header.length] = '\0';
+  snprintf(expected, sizeof(expected), "%s started", prefix);
+  if (header.timestamp.tv_sec != 0 || header.timestamp.tv_nsec != 0 ||
+      strcmp(text, expected) != 0) {
+    fprintf(stderr, "Error: Unexpected message from %s worker: %s\n", prefix,
+            text);
+    return -1;
+  }
+  return 0;
+}
+
+// A buffered reader over a worker's message pipe. Rather than issuing a
+// separate read() for each frame's header and body, it pulls a large chunk
+// per syscall into `buf` and parses as many whole frames as that chunk
+// contains, so the per-line syscall cost is amortized across many lines.
+// Unconsumed bytes live in buf[start:end]; a partial frame is simply carried
+// over to the next read.
+struct framereader {
+  int fd;
+  char *buf;
+  size_t cap;
+  size_t start; // offset of the first unconsumed byte
+  size_t end;   // offset just past the last valid byte
+};
+
+#define FRAMEREADER_INITIAL_CAP (64 * 1024)
+
+void framereader_init(struct framereader *fr, int fd) {
+  fr->fd = fd;
+  fr->cap = FRAMEREADER_INITIAL_CAP;
+  fr->buf = xmalloc(fr->cap);
+  fr->start = 0;
+  fr->end = 0;
+}
+
+void framereader_free(struct framereader *fr) {
+  free(fr->buf);
+  fr->buf = NULL;
+}
+
+// Bytes received but not yet consumed as a whole frame. A nonzero value once
+// the pipe has reached EOF means the worker stopped mid-frame.
+size_t framereader_pending(const struct framereader *fr) {
+  return fr->end - fr->start;
+}
+
+// Issue a single read() into the buffer, making room first by compacting
+// consumed bytes and, if a frame larger than the buffer is being assembled,
+// growing it. Returns 1 if bytes were read, 0 at end-of-file, -1 on error
+// (errno set). Reads exactly once so it never blocks after a POLLIN.
+int framereader_fill(struct framereader *fr) {
+  if (fr->start > 0) {
+    // Reclaim space consumed from the front.
+    size_t remaining = fr->end - fr->start;
+    memmove(fr->buf, fr->buf + fr->start, remaining);
+    fr->start = 0;
+    fr->end = remaining;
+  }
+  if (fr->end == fr->cap) {
+    // Buffer full of one not-yet-complete frame: double it to make room, but
+    // never past MAX_FRAME_SIZE. A complete frame always fits within that
+    // bound (framereader_next() rejects any frame claiming a larger body), so
+    // a buffer that is full at the cap means the stream is corrupt.
+    if (fr->cap >= MAX_FRAME_SIZE) {
+      fprintf(stderr, "Error: frame exceeds maximum size %zu; aborting\n",
+              (size_t)MAX_FRAME_SIZE);
+      exit(EXIT_FAILURE);
+    }
+    fr->cap *= 2;
+    if (fr->cap > MAX_FRAME_SIZE) {
+      fr->cap = MAX_FRAME_SIZE;
+    }
+    fr->buf = xrealloc(fr->buf, fr->cap);
+  }
+  ssize_t n;
+  do {
+    n = read(fr->fd, fr->buf + fr->end, fr->cap - fr->end);
+  } while (n < 0 && errno == EINTR);
+  if (n < 0) {
+    return -1;
+  }
+  if (n == 0) {
+    return 0;
+  }
+  fr->end += (size_t)n;
+  return 1;
+}
+
+// Parse the next whole frame out of the buffer, if one is fully present.
+// Returns a freshly allocated payload (caller frees) or NULL when more bytes
+// are needed. memcpy is used for the header because buffered bytes are not
+// suitably aligned for a struct access.
+struct payload *framereader_next(struct framereader *fr) {
+  size_t available = fr->end - fr->start;
+  if (available < sizeof(struct msg_header)) {
+    return NULL;
+  }
+  struct msg_header header;
+  memcpy(&header, fr->buf + fr->start, sizeof(header));
+  if (header.length > MAX_LINE_SIZE) {
+    // No worker ever sends a frame larger than MAX_LINE_SIZE, so a length
+    // beyond it means the frame stream has desynchronized or been corrupted.
+    // Fail fast rather than attempt a huge allocation / unbounded growth.
+    fprintf(stderr, "Error: frame length %u exceeds maximum %d; aborting\n",
+            header.length, MAX_LINE_SIZE);
+    exit(EXIT_FAILURE);
+  }
+  if (available < sizeof(header) + header.length) {
+    return NULL; // body not fully buffered yet
+  }
+  struct payload *msg_payload = xmalloc(sizeof(*msg_payload) + header.length + 1);
+  msg_payload->timestamp = header.timestamp;
+  msg_payload->length = header.length;
+  memcpy(msg_payload->text, fr->buf + fr->start + sizeof(header), header.length);
+  msg_payload->text[header.length] = '\0';
+  fr->start += sizeof(header) + header.length;
+  return msg_payload;
 }
 
 void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
@@ -508,9 +745,6 @@ int main(int argc, char *argv[]) {
     exit(EXIT_FAILURE);
   }
 
-  // Test message payload for verifying stdout and stderr workers
-  struct payload test_msg_payload;
-
   pid_t stdout_worker = fork();
   if (stdout_worker == 0) {
     // Child process: handle stdout
@@ -527,20 +761,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Verify that the stdout worker process is online and ready
-  if (read(stdout_msg_pipe[0], &test_msg_payload, sizeof(struct payload)) ==
-      -1) {
-    perror("Error reading from stdout pipe");
-    return EXIT_FAILURE;
-  }
-  if (test_msg_payload.timestamp.tv_sec != 0 ||
-      test_msg_payload.timestamp.tv_nsec != 0) {
-    fprintf(stderr, "Error: Unexpected message from stdout worker: %s",
-            test_msg_payload.text);
-    return EXIT_FAILURE;
-  }
-  if (strcmp(test_msg_payload.text, "stdout started") != 0) {
-    fprintf(stderr, "Error: Unexpected message from stdout worker: %s",
-            test_msg_payload.text);
+  if (await_worker(stdout_msg_pipe[0], "stdout") != 0) {
     return EXIT_FAILURE;
   }
   _debug(2, "confirmed stdout worker process [%d] is online and ready",
@@ -562,20 +783,7 @@ int main(int argc, char *argv[]) {
   }
 
   // Verify that the stderr worker process is online and ready
-  if (read(stderr_msg_pipe[0], &test_msg_payload, sizeof(struct payload)) ==
-      -1) {
-    perror("Error reading from stderr pipe");
-    return EXIT_FAILURE;
-  }
-  if (test_msg_payload.timestamp.tv_sec != 0 ||
-      test_msg_payload.timestamp.tv_nsec != 0) {
-    fprintf(stderr, "Error: Unexpected message from stderr worker: %s",
-            test_msg_payload.text);
-    return EXIT_FAILURE;
-  }
-  if (strcmp(test_msg_payload.text, "stderr started") != 0) {
-    fprintf(stderr, "Error: Unexpected message from stderr worker: %s",
-            test_msg_payload.text);
+  if (await_worker(stderr_msg_pipe[0], "stderr") != 0) {
     return EXIT_FAILURE;
   }
   _debug(2, "confirmed stderr worker process [%d] is online and ready",
@@ -622,15 +830,20 @@ int main(int argc, char *argv[]) {
   pfds[1].fd = stderr_msg_pipe[0];
   pfds[1].events = POLLIN | POLLHUP;
 
+  struct framereader stdout_reader, stderr_reader;
+  framereader_init(&stdout_reader, stdout_msg_pipe[0]);
+  framereader_init(&stderr_reader, stderr_msg_pipe[0]);
+
   int loopcount = 0;
-  int ms_delta = 0;
+  long ms_delta = 0;
   while (stdout_head || stderr_head || (num_open_fds > 0)) {
     _debug(2, "loop %d", loopcount++);
 
     // Check for new input on the message pipes
     if (num_open_fds > 0) {
-      int poll_result = poll(pfds, 2, 1000); // Block for a second waiting
-                                             // for something to happen
+      int poll_result = poll(pfds, 2, POLL_TIMEOUT_MS); // Wait for the next
+                                                        // message, or time out
+                                                        // to flush aged lines
       if (poll_result == -1) {
         if (errno == EINTR)
           continue;
@@ -648,29 +861,42 @@ int main(int argc, char *argv[]) {
         _debug(2,
                "stderr POLLIN=%d, POLLPRI=%d, POLLOUT=%d, POLLERR=%d, "
                "POLLHUP=%d, POLLNVAL=%d",
-               pfds[0].revents & POLLIN, pfds[0].revents & POLLPRI,
-               pfds[0].revents & POLLOUT, pfds[0].revents & POLLERR,
-               pfds[0].revents & POLLHUP, pfds[0].revents & POLLNVAL);
+               pfds[1].revents & POLLIN, pfds[1].revents & POLLPRI,
+               pfds[1].revents & POLLOUT, pfds[1].revents & POLLERR,
+               pfds[1].revents & POLLHUP, pfds[1].revents & POLLNVAL);
         if (pfds[0].revents & POLLIN) {
           _debug(2, "detected input on stdout_msg_pipe[0]");
-          struct payload *msg_payload = malloc(sizeof(struct payload));
-          if (read(stdout_msg_pipe[0], msg_payload, sizeof(struct payload)) >
-              0) {
-            // Add received message to stdout queue
-            struct message *msg = malloc(sizeof(struct message));
+          // One read() per poll iteration on purpose: it keeps the two streams
+          // serviced fairly and never blocks. Do not "optimize" this into a
+          // loop that drains the pipe, which could starve the other stream.
+          int rc = framereader_fill(&stdout_reader);
+          // Enqueue every whole frame the read made available.
+          struct payload *msg_payload;
+          while ((msg_payload = framereader_next(&stdout_reader)) != NULL) {
+            struct message *msg = xmalloc(sizeof(struct message));
             msg->msg_payload = msg_payload;
             push(&stdout_head, &stdout_tail, msg, &stdout_queuelen);
-          } else {
-            if (pfds[0].revents & POLLHUP) {
-              // POLLIN and POLLHUP both set, but reads are failing
-              // so stop polling for POLLIN events.
-              pfds[0].events = POLLHUP;
-            } else {
+          }
+          if (rc <= 0) {
+            // EOF or error: stop watching for input. The POLLHUP branch
+            // closes the pipe (and reports any truncated final frame) on a
+            // later poll.
+            if (rc < 0) {
               perror("read(stdout_msg_pipe[0])");
             }
+            pfds[0].events = POLLHUP;
           }
         } else if (pfds[0].revents & POLLHUP) {
           _debug(2, "closing stdout_msg_pipe[0]");
+          // Leftover unconsumed bytes mean the worker died mid-frame. EOF can
+          // surface as POLLHUP with no final POLLIN, so check here - the one
+          // branch every pipe passes through exactly once - rather than only
+          // on an EOF seen during a read.
+          if (framereader_pending(&stdout_reader) > 0) {
+            _warn("stdout worker ended mid-frame; %zu trailing byte(s) "
+                  "discarded",
+                  framereader_pending(&stdout_reader));
+          }
           close(stdout_msg_pipe[0]);
           pfds[0].fd = -1; // Ignore this file descriptor in future polls
           num_open_fds--;
@@ -678,24 +904,34 @@ int main(int argc, char *argv[]) {
         }
         if (pfds[1].revents & POLLIN) {
           _debug(2, "detected input on stderr_msg_pipe[0]");
-          struct payload *msg_payload = malloc(sizeof(struct payload));
-          if (read(stderr_msg_pipe[0], msg_payload, sizeof(struct payload)) >
-              0) {
-            // Add received message to stderr queue
-            struct message *msg = malloc(sizeof(struct message));
+          int rc = framereader_fill(&stderr_reader);
+          // Enqueue every whole frame the read made available.
+          struct payload *msg_payload;
+          while ((msg_payload = framereader_next(&stderr_reader)) != NULL) {
+            struct message *msg = xmalloc(sizeof(struct message));
             msg->msg_payload = msg_payload;
             push(&stderr_head, &stderr_tail, msg, &stderr_queuelen);
-          } else {
-            if (pfds[1].revents & POLLHUP) {
-              // POLLIN and POLLHUP both set, but reads are failing
-              // so stop polling for POLLIN events.
-              pfds[1].events = POLLHUP;
-            } else {
+          }
+          if (rc <= 0) {
+            // EOF or error: stop watching for input. The POLLHUP branch
+            // closes the pipe (and reports any truncated final frame) on a
+            // later poll.
+            if (rc < 0) {
               perror("read(stderr_msg_pipe[0])");
             }
+            pfds[1].events = POLLHUP;
           }
         } else if (pfds[1].revents & POLLHUP) {
           _debug(2, "closing stderr_msg_pipe[0]");
+          // Leftover unconsumed bytes mean the worker died mid-frame. EOF can
+          // surface as POLLHUP with no final POLLIN, so check here - the one
+          // branch every pipe passes through exactly once - rather than only
+          // on an EOF seen during a read.
+          if (framereader_pending(&stderr_reader) > 0) {
+            _warn("stderr worker ended mid-frame; %zu trailing byte(s) "
+                  "discarded",
+                  framereader_pending(&stderr_reader));
+          }
           close(stderr_msg_pipe[0]);
           pfds[1].fd = -1; // Ignore this file descriptor in future polls
           num_open_fds--;
@@ -726,20 +962,20 @@ int main(int argc, char *argv[]) {
         if (stdout_head) {
           ms_delta = timespec_ms_delta(&current_time,
                                        &stdout_head->msg_payload->timestamp);
-          if (ms_delta >= 100) {
+          if (ms_delta >= MESSAGE_HOLD_MS) {
             stdout_ready = stdout_head;
           } else {
-            _debug(2, "message on stdout not ready to send after only %dms",
+            _debug(2, "message on stdout not ready to send after only %ldms",
                    ms_delta);
           }
         }
         if (stderr_head) {
           ms_delta = timespec_ms_delta(&current_time,
                                        &stderr_head->msg_payload->timestamp);
-          if (ms_delta >= 100) {
+          if (ms_delta >= MESSAGE_HOLD_MS) {
             stderr_ready = stderr_head;
           } else {
-            _debug(2, "message on stderr not ready to send after only %dms",
+            _debug(2, "message on stderr not ready to send after only %ldms",
                    ms_delta);
           }
         }
@@ -778,6 +1014,15 @@ int main(int argc, char *argv[]) {
       }
     }
   }
+
+  framereader_free(&stdout_reader);
+  framereader_free(&stderr_reader);
+
+  // Reap the timestamp workers. They have closed their pipes (POLLHUP) by the
+  // time we get here; a blocking wait collects them so they do not linger as
+  // zombies. ECHILD (already reaped via the WNOHANG calls above) is harmless.
+  waitpid(stdout_worker, NULL, 0);
+  waitpid(stderr_worker, NULL, 0);
 
   // Wait for child command process to complete
   int status;

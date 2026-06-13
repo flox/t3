@@ -50,3 +50,13 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# t3 build outputs
+/t3
+/t3.1
+/result-*
+
+# Compiled test helpers
+/tests/midline-flush
+/tests/stress
+/tests/bench

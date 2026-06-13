@@ -8,34 +8,43 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # gcc 9/10/11 are only packaged for ubuntu 22.04 (jammy); the 24.04
+    # "ubuntu-latest" image ships gcc 12+, so pin the image to the matrix.
+    runs-on: ubuntu-22.04
+    # Bound the job so a hung stress test (the workers block on write) fails
+    # fast rather than running to GitHub's default job cap.
+    timeout-minutes: 15
     strategy:
+      fail-fast: false
       matrix:
         gcc: ['9', '10', '11']
+    env:
+      CC: gcc-${{ matrix.gcc }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y help2man clang-tidy
+          sudo apt-get install -y help2man clang-tidy gcc-${{ matrix.gcc }}
 
       - name: Build
-        run: make
+        run: make CC="$CC"
 
       - name: Run tests
-        run: make test
+        run: make test CC="$CC"
 
       - name: Lint
         run: make lint
 
   flox-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Install Flox
-        uses: flox/install-flox-action@v2
+        uses: flox/install-flox-action@f6002ed63e483f134001de7b4b45be891e00b09f # v2.5.1
 
       - name: Build and Test with Flox
         run: |

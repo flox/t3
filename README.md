@@ -114,14 +114,15 @@ flowchart LR
 
 ```
 Usage: t3 [OPTION] FILE -- COMMAND ARGS ...
-Invoke provided command and write its colorized, precise time-stamped output both to the provided fileand to stdout/err.
+Invoke provided command and write its colorized, precise time-stamped output both to the provided file and to stdout/err.
 
   -l, --light       use color scheme suitable for light backgrounds
   -d, --dark        use color scheme suitable for dark backgrounds
   -b, --bold        highlight stderr in bold text (with no color)
   -p, --plain       disable all timestamps, ANSI color and highlighting
   -f, --forcecolor  enforce the use of color when not writing to a TTY
-  -e, --errcolor    color
+  -o, --outcolor C  set the ANSI escape sequence used to color stdout
+  -e, --errcolor C  set the ANSI escape sequence used to color stderr
   -t, --ts          enable timestamps in all outputs
   -r, --relative    display timestamps as relative offsets from start time (implies --ts)
   -h, --help        print this help message

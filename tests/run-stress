@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# run-stress - drive the t3 concurrency stress test.
+#
+# Runs the highly-threaded tests/stress generator under t3 and verifies that
+# every line it emitted is reproduced exactly once, intact, and on the correct
+# stream.  This is the regression test for garbled/dropped output observed when
+# streaming the output of highly parallel builds.
+#
+# Environment:
+#   T3              path to the t3 binary  (default: ./t3)
+#   STRESS_THREADS  number of generator threads (default: 16)
+#   STRESS_LINES    lines per thread per stream (default: 1000)
+
+set -eu
+
+here=$(dirname "$0")
+t3=${T3:-./t3}
+threads=${STRESS_THREADS:-16}
+lines=${STRESS_LINES:-1000}
+checker="$here/check-stream.awk"
+generator="$here/stress"
+
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/t3-stress.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+echo "--> stress: $threads threads x $lines lines/stream via $t3"
+"$t3" "$tmp/stress.log" -- "$generator" "$threads" "$lines" \
+    >"$tmp/stress.out" 2>"$tmp/stress.err"
+
+# stdout and stderr are split back out by t3; each must be complete and intact.
+awk -v prefixes=OUT -v threads="$threads" -v lines="$lines" -v label=stdout \
+    -f "$checker" "$tmp/stress.out"
+awk -v prefixes=ERR -v threads="$threads" -v lines="$lines" -v label=stderr \
+    -f "$checker" "$tmp/stress.err"
+
+# The combined log interleaves both streams with ANSI color; strip the color
+# escapes and confirm the merged result is complete and uncorrupted too.
+esc=$(printf '\033')
+sed "s/${esc}\[[0-9;]*m//g" "$tmp/stress.log" >"$tmp/stress.log.clean"
+awk -v prefixes="OUT ERR" -v threads="$threads" -v lines="$lines" \
+    -v label=logfile -f "$checker" "$tmp/stress.log.clean"
+
+echo "--> stress: OK"
