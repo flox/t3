@@ -1,0 +1,63 @@
+#!/bin/sh
+#
+# bench-overhead - estimate the marginal per-line cost of the t3 binary
+#                   pointed to by $T3.
+#
+# Times the bench generator alone and again through t3, and reports the
+# difference divided by the line count. Both the logfile and t3's own
+# stdout/stderr go to /dev/null so the (wire-format-independent) logfile disk
+# cost does not dominate; what remains is t3's whole per-line cost - read,
+# frame, queue, the per-line fflush, and so on - not the framing in isolation.
+#
+# This measures one binary; it does not by itself compare wire formats. The
+# "fixed vs variable framing" numbers in the PR came from running this harness
+# against a build of the previous (fixed-frame) version and the current one.
+# Note also that with MESSAGE_HOLD_MS in effect the parent drains in batches,
+# so this reflects steady-state throughput rather than worst-case latency.
+#
+# Each configuration is run REPS times and the fastest (least noisy) run is
+# kept. Reports nanoseconds per line.
+#
+# Env: T3 (default ./t3), COUNT (default 1000000), REPS (default 5),
+#      WIDTHS (default "16 64 256").
+
+set -eu
+
+t3=${T3:-./t3}
+count=${COUNT:-1000000}
+reps=${REPS:-5}
+widths=${WIDTHS:-"16 64 256"}
+bench=tests/bench
+
+# High-resolution wall clock. Requires GNU date (coreutils) for %N; the
+# Flox environment provides it.
+now() { date +%s.%N; }
+
+# best_time CMD... -> prints the minimum wall time over $reps runs
+best_time() {
+  best=""
+  i=0
+  while [ "$i" -lt "$reps" ]; do
+    start=$(now)
+    "$@" >/dev/null 2>&1
+    end=$(now)
+    dt=$(awk -v a="$start" -v b="$end" 'BEGIN { printf "%.6f", b - a }')
+    if [ -z "$best" ] || awk -v d="$dt" -v b="$best" 'BEGIN { exit !(d < b) }'; then
+      best=$dt
+    fi
+    i=$((i + 1))
+  done
+  printf '%s' "$best"
+}
+
+printf '%s\n' "t3=$t3  count=$count  reps=$reps"
+printf '%-8s %12s %12s %12s %12s\n' width raw_s t3plain_s t3ts_s "ns/line(plain)"
+
+for w in $widths; do
+  raw=$(best_time "$bench" "$count" "$w")
+  plain=$(best_time "$t3" -p /dev/null -- "$bench" "$count" "$w")
+  ts=$(best_time "$t3" -t /dev/null -- "$bench" "$count" "$w")
+  nsline=$(awk -v p="$plain" -v r="$raw" -v c="$count" \
+    'BEGIN { printf "%.1f", (p - r) / c * 1e9 }')
+  printf '%-8s %12s %12s %12s %12s\n' "$w" "$raw" "$plain" "$ts" "$nsline"
+done
