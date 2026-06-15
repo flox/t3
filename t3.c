@@ -32,6 +32,7 @@
 #include <errno.h>
 #include <getopt.h>
 #include <poll.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -77,6 +78,18 @@
 #define ANSI_COLOR_CYAN "\x1b[36m"
 #define ANSI_COLOR_WHITE "\x1b[37m"
 
+// Behavior on a write error to one of t3's outputs, mirroring tee(1)'s
+// --output-error. The "nopipe" variants ignore broken-pipe (EPIPE) errors so
+// that, for example, `t3 log -- cmd | head` keeps writing to the logfile and
+// stderr after the stdout consumer goes away.
+enum output_error_mode {
+  OUTPUT_ERROR_DEFAULT,     // exit on a pipe error, warn on any other
+  OUTPUT_ERROR_WARN,        // warn on any write error, continue
+  OUTPUT_ERROR_WARN_NOPIPE, // warn on non-pipe errors, ignore pipe errors
+  OUTPUT_ERROR_EXIT,        // exit on any write error
+  OUTPUT_ERROR_EXIT_NOPIPE  // exit on non-pipe errors, ignore pipe errors
+};
+
 // Global variables
 int color_to_tty = 1;
 int debuglevel = 0;
@@ -85,6 +98,18 @@ int relative_timestamps = 0;
 const char *ts_color = ANSI_COLOR_CYAN; // Timestamp color
 const char *reset_color = ANSI_COLOR_RESET;
 struct timespec start_timestamp;
+enum output_error_mode output_error = OUTPUT_ERROR_DEFAULT;
+// Set once a sink has failed so we stop writing to it (and avoid repeat
+// diagnostics). The logfile is also re-checked when it is closed.
+int stdout_broken = 0;
+int stderr_broken = 0;
+int logfile_broken = 0;
+// Set when a fatal --output-error policy (exit / exit-nopipe, or the default
+// broken-pipe case) fires. Rather than exit() from inside the drain loop -
+// which would skip closing the logfile and reaping children - the loop breaks
+// to a shared teardown that exits with failure status (tee-faithful: the write
+// error overrides the command's own status).
+int output_error_fatal = 0;
 
 // Diagnostic macros. Each expands to a single statement (wrapped in
 // do/while(0)) so it behaves correctly when used as the body of an
@@ -139,6 +164,22 @@ int stdout_queuelen = 0;
 struct message *stderr_head = NULL;
 struct message *stderr_tail = NULL;
 int stderr_queuelen = 0;
+
+// Install a disposition for a signal using sigaction(2), whose semantics are
+// well-defined across platforms (unlike signal(2), whose SysV/BSD behavior has
+// historically differed). `handler` may be SIG_IGN or SIG_DFL. Aborts on
+// failure, which can only happen on a programming error (invalid signal).
+static void set_signal(int signum, void (*handler)(int)) {
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+  if (sigaction(signum, &sa, NULL) == -1) {
+    perror("sigaction");
+    exit(EXIT_FAILURE);
+  }
+}
 
 // malloc() that aborts on failure. Allocations here are small and frequent;
 // there is nothing useful the program can do if they fail.
@@ -235,6 +276,16 @@ static void usage(const int rc) {
   printf("  -r, --relative    "
          "display timestamps as relative offsets from start time "
          "(implies --ts)\n");
+  printf("  -a, --append      "
+         "append to the log file instead of overwriting it\n");
+  printf("  -i, --ignore-interrupts  "
+         "ignore interrupt signals (finish flushing output on Ctrl-C)\n");
+  printf("  --output-error[=MODE]    "
+         "set behavior on a write error.  MODE is one of:\n"
+         "                    warn, warn-nopipe, exit, exit-nopipe.\n"
+         "                    A bare --output-error means warn; with no\n"
+         "                    --output-error, t3 exits on a broken pipe and\n"
+         "                    warns on other write errors.\n");
   printf("  -h, --help        print this help message\n");
   printf("  -v, --version     print version string\n");
   printf("  --debug           enable debugging\n");
@@ -527,13 +578,66 @@ struct payload *framereader_next(struct framereader *fr) {
   if (available < sizeof(header) + header.length) {
     return NULL; // body not fully buffered yet
   }
-  struct payload *msg_payload = xmalloc(sizeof(*msg_payload) + header.length + 1);
+  struct payload *msg_payload =
+      xmalloc(sizeof(*msg_payload) + header.length + 1);
   msg_payload->timestamp = header.timestamp;
   msg_payload->length = header.length;
-  memcpy(msg_payload->text, fr->buf + fr->start + sizeof(header), header.length);
+  memcpy(msg_payload->text, fr->buf + fr->start + sizeof(header),
+         header.length);
   msg_payload->text[header.length] = '\0';
   fr->start += sizeof(header) + header.length;
   return msg_payload;
+}
+
+// React to a failed write on one of t3's outputs according to the configured
+// --output-error mode. `err` is the errno captured at the point of failure
+// (passed in so intervening libc calls cannot clobber it). Marks the sink
+// broken so the caller stops writing to it. For a fatal mode it sets
+// output_error_fatal rather than calling exit() directly, so the caller's
+// drain loop can break to the shared teardown (closing the logfile and
+// reaping children) before exiting with failure status.
+static void output_write_error(const char *sink, int *broken, int err) {
+  int is_pipe = (err == EPIPE);
+  if (broken) {
+    *broken = 1;
+  }
+  // Each case returns rather than breaks: that keeps a default: out of the
+  // switch (so -Wall's -Wswitch still warns at compile time if a new mode is
+  // added but not handled here) while letting the abort() below act as a
+  // runtime guard. The abort() is unreachable in normal operation - the modes
+  // are validated when --output-error is parsed - but if a corrupted value
+  // ever reaches here we fail loudly instead of silently doing nothing, which
+  // a human is far less likely to miss than a compiler warning.
+  switch (output_error) {
+  case OUTPUT_ERROR_DEFAULT:
+    // tee's default: fatal on a pipe error, diagnose the rest.
+    if (is_pipe) {
+      output_error_fatal = 1;
+    } else {
+      _warn("write error on %s: %s", sink, strerror(err));
+    }
+    return;
+  case OUTPUT_ERROR_WARN:
+    _warn("write error on %s: %s", sink, strerror(err));
+    return;
+  case OUTPUT_ERROR_WARN_NOPIPE:
+    if (!is_pipe) {
+      _warn("write error on %s: %s", sink, strerror(err));
+    }
+    return;
+  case OUTPUT_ERROR_EXIT:
+    _error("write error on %s: %s", sink, strerror(err));
+    output_error_fatal = 1;
+    return;
+  case OUTPUT_ERROR_EXIT_NOPIPE:
+    if (!is_pipe) {
+      _error("write error on %s: %s", sink, strerror(err));
+      output_error_fatal = 1;
+    }
+    return;
+  }
+  _error("internal error: unhandled output_error mode %d", output_error);
+  abort();
 }
 
 void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
@@ -582,15 +686,47 @@ void process_msg_payload(FILE *stream, FILE *logfile, const char *color,
     // Make sure timestamp is empty
     timestamp[0] = '\0';
   }
-  fprintf(logfile, "%s%s%s%s%s%s\n", ts_color, timestamp, reset_color, color,
-          msg_payload->text, reset_color);
-  if (color_to_tty) {
-    fprintf(stream, "%s%s%s%s%s%s\n", ts_color, timestamp, reset_color, color,
-            msg_payload->text, reset_color);
-  } else {
-    fprintf(stream, "%s%s\n", timestamp, msg_payload->text);
+  // Logfile: the primary artifact. It always carries the configured color and
+  // timestamp markup - which --plain empties and the timestamp options enable -
+  // and, unlike the stdout/stderr streams, keeps that color even when those
+  // streams are not a TTY. It is not flushed per line for performance; errors
+  // that have surfaced are caught here and the logfile is re-checked
+  // definitively at fclose().
+  if (!logfile_broken) {
+    // Clear errno first, then capture it the instant the write reports failure
+    // (via the fprintf return or ferror), before any other call can clobber
+    // it. A failure seen only through the error indicator - which does not set
+    // errno - is reported as EIO. No clearerr(): the sink is marked broken and
+    // skipped from here on.
+    errno = 0;
+    int wrote = fprintf(logfile, "%s%s%s%s%s%s\n", ts_color, timestamp,
+                        reset_color, color, msg_payload->text, reset_color);
+    int err = errno;
+    if (wrote < 0 || ferror(logfile)) {
+      output_write_error("logfile", &logfile_broken, err ? err : EIO);
+    }
   }
-  fflush(stream);
+
+  // stdout/stderr: once a stream has broken, skip it so we neither re-raise
+  // EPIPE nor emit repeated diagnostics for the same dead consumer.
+  int *broken = (stream == stderr) ? &stderr_broken : &stdout_broken;
+  const char *sink = (stream == stderr) ? "stderr" : "stdout";
+  if (!*broken) {
+    errno = 0;
+    int wrote;
+    if (color_to_tty) {
+      wrote = fprintf(stream, "%s%s%s%s%s%s\n", ts_color, timestamp,
+                      reset_color, color, msg_payload->text, reset_color);
+    } else {
+      wrote = fprintf(stream, "%s%s\n", timestamp, msg_payload->text);
+    }
+    int flush_failed = (fflush(stream) != 0);
+    // Capture errno from the failing fprintf/fflush before ferror() is called.
+    int err = errno;
+    if (wrote < 0 || flush_failed || ferror(stream)) {
+      output_write_error(sink, broken, err ? err : EIO);
+    }
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -607,15 +743,23 @@ int main(int argc, char *argv[]) {
   int forcecolor_mode = 0;
   int timestamp_mode = 0;
   int debug_mode = 0;
+  int append_mode = 0;
+  int ignore_interrupts = 0;
+
+  // Long option without a short equivalent.
+  enum { OPT_OUTPUT_ERROR = 1000 };
 
   static struct option long_options[] = {
+      {"append", no_argument, 0, 'a'},
       {"bold", no_argument, 0, 'b'},
       {"dark", no_argument, 0, 'd'},
       {"errcolor", required_argument, 0, 'e'},
       {"forcecolor", no_argument, 0, 'f'},
       {"help", no_argument, 0, 'h'},
+      {"ignore-interrupts", no_argument, 0, 'i'},
       {"light", no_argument, 0, 'l'},
       {"outcolor", required_argument, 0, 'o'},
+      {"output-error", optional_argument, 0, OPT_OUTPUT_ERROR},
       {"plain", no_argument, 0, 'p'},
       {"relative", no_argument, 0, 'r'},
       {"ts", no_argument, 0, 't'},
@@ -623,7 +767,7 @@ int main(int argc, char *argv[]) {
       {"debug", no_argument, 0, 'x'},
       {0, 0, 0, 0}};
 
-  while ((opt = getopt_long(argc, argv, "bde:flho:prtv", long_options,
+  while ((opt = getopt_long(argc, argv, "abde:fhilo:prtv", long_options,
                             &option_index)) != -1) {
     switch (opt) {
     case 'l':
@@ -640,6 +784,27 @@ int main(int argc, char *argv[]) {
       err_color = ANSI_COLOR_BOLD; // ANSI bold for stderr
       ts_color = "";               // Timestamp color
       color_bold = 1;
+      break;
+    case 'a':
+      append_mode = 1;
+      break;
+    case 'i':
+      ignore_interrupts = 1;
+      break;
+    case OPT_OUTPUT_ERROR:
+      // tee semantics: --output-error with no MODE means "warn".
+      if (optarg == NULL || strcmp(optarg, "warn") == 0) {
+        output_error = OUTPUT_ERROR_WARN;
+      } else if (strcmp(optarg, "warn-nopipe") == 0) {
+        output_error = OUTPUT_ERROR_WARN_NOPIPE;
+      } else if (strcmp(optarg, "exit") == 0) {
+        output_error = OUTPUT_ERROR_EXIT;
+      } else if (strcmp(optarg, "exit-nopipe") == 0) {
+        output_error = OUTPUT_ERROR_EXIT_NOPIPE;
+      } else {
+        fprintf(stderr, "Error: invalid --output-error mode '%s'\n", optarg);
+        usage(EXIT_FAILURE);
+      }
       break;
     case 'f':
       forcecolor_mode = 1;
@@ -733,7 +898,7 @@ int main(int argc, char *argv[]) {
     return EXIT_FAILURE;
   }
 
-  FILE *logfile = fopen(logfile_name, "w");
+  FILE *logfile = fopen(logfile_name, append_mode ? "a" : "w");
   if (!logfile) {
     fprintf(stderr, "Error opening logfile '%s': %s\n", logfile_name,
             strerror(errno));
@@ -744,6 +909,16 @@ int main(int argc, char *argv[]) {
   if (clock_gettime(CLOCK_REALTIME, &start_timestamp) == -1) {
     perror("clock_gettime");
     exit(EXIT_FAILURE);
+  }
+
+  // With --ignore-interrupts, t3 and its timestamp workers ignore SIGINT so a
+  // Ctrl-C does not tear t3 down mid-flush. The signal is set before forking
+  // the workers (which inherit the disposition); the command child below
+  // restores the default so the command itself still responds to Ctrl-C. t3
+  // then drains the workers' remaining output and exits with the child's
+  // status once the command's pipes close.
+  if (ignore_interrupts) {
+    set_signal(SIGINT, SIG_IGN);
   }
 
   pid_t stdout_worker = fork();
@@ -811,6 +986,15 @@ int main(int argc, char *argv[]) {
     close(stdout_pipe[1]); // Close write end of stdout pipe
     close(stderr_pipe[1]); // Close write end of stderr pipe
 
+    // If --ignore-interrupts set SIGINT to SIG_IGN in the parent, restore the
+    // default in the command so it still responds to a Ctrl-C. Only undo what
+    // t3 itself changed: when the option is off we leave the inherited
+    // disposition untouched, so a SIG_IGN inherited from t3's own parent
+    // (e.g. when t3 was started in the background) still propagates.
+    if (ignore_interrupts) {
+      set_signal(SIGINT, SIG_DFL);
+    }
+
     execvp(command, command_args);
 
     // If execvp fails
@@ -823,6 +1007,13 @@ int main(int argc, char *argv[]) {
   close(stderr_pipe[1]);     // Close write end of stderr pipe
   close(stdout_msg_pipe[1]); // Close write end of stdout message pipe
   close(stderr_msg_pipe[1]); // Close write end of stderr message pipe
+
+  // Ignore SIGPIPE so that a write to a closed consumer (e.g. the stdout of
+  // `t3 log -- cmd | head`) returns EPIPE for --output-error to handle, rather
+  // than silently killing t3. This is set here in the parent, after the
+  // command child has been forked and exec'd, so the command keeps the default
+  // SIGPIPE disposition; it applies for the rest of t3's own lifetime.
+  set_signal(SIGPIPE, SIG_IGN);
 
   struct pollfd pfds[2];
   nfds_t num_open_fds = 2; // We start with two open file descriptors
@@ -837,7 +1028,8 @@ int main(int argc, char *argv[]) {
 
   int loopcount = 0;
   long ms_delta = 0;
-  while (stdout_head || stderr_head || (num_open_fds > 0)) {
+  while (!output_error_fatal &&
+         (stdout_head || stderr_head || (num_open_fds > 0))) {
     _debug(2, "loop %d", loopcount++);
 
     // Check for new input on the message pipes
@@ -948,8 +1140,8 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
-    // Drain message queues
-    while (stdout_head || stderr_head) {
+    // Drain message queues (stop early if a fatal write error has fired).
+    while ((stdout_head || stderr_head) && !output_error_fatal) {
       _debug(
           1,
           "stdout/stderr queuelen = %d/%d, stdout_head = %p stderr_head = %p",
@@ -1019,6 +1211,29 @@ int main(int argc, char *argv[]) {
   framereader_free(&stdout_reader);
   framereader_free(&stderr_reader);
 
+  if (output_error_fatal) {
+    // A fatal --output-error policy fired mid-drain. Close the message-pipe
+    // read ends; the next write from a worker to its now-reader-less pipe
+    // raises SIGPIPE (workers, unlike the parent, do not ignore it) and the
+    // worker dies. With the workers gone, the command's stdout/stderr pipes
+    // lose their readers and the command is likewise stopped by SIGPIPE on its
+    // next write. We do not block waiting on any of them - the OS reaps them
+    // once t3 exits - but we still flush and close the logfile so already-
+    // queued lines are not lost. Exit with failure: the write error overrides
+    // the command's status.
+    if (pfds[0].fd != -1) {
+      close(stdout_msg_pipe[0]);
+    }
+    if (pfds[1].fd != -1) {
+      close(stderr_msg_pipe[0]);
+    }
+    if (!logfile_broken) {
+      fflush(logfile);
+    }
+    fclose(logfile);
+    return EXIT_FAILURE;
+  }
+
   // Reap the timestamp workers. They have closed their pipes (POLLHUP) by the
   // time we get here; a blocking wait collects them so they do not linger as
   // zombies. ECHILD (already reaped via the WNOHANG calls above) is harmless.
@@ -1029,7 +1244,21 @@ int main(int argc, char *argv[]) {
   int status;
   waitpid(pid, &status, 0);
 
-  fclose(logfile);
+  // Flush and close the logfile, applying the --output-error policy to any
+  // deferred write error (e.g. a full disk) or a close(2) failure (e.g. on a
+  // networked filesystem) that only surfaces now.
+  errno = 0;
+  if (!logfile_broken && (fflush(logfile) != 0 || ferror(logfile))) {
+    output_write_error("logfile", &logfile_broken, errno ? errno : EIO);
+  }
+  errno = 0;
+  if (fclose(logfile) != 0 && !logfile_broken) {
+    output_write_error("logfile", &logfile_broken, errno ? errno : EIO);
+  }
 
+  // A fatal error surfacing only at flush/close still forces failure status.
+  if (output_error_fatal) {
+    return EXIT_FAILURE;
+  }
   return WIFEXITED(status) ? WEXITSTATUS(status) : EXIT_FAILURE;
 }

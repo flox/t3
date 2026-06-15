@@ -125,10 +125,35 @@ Invoke provided command and write its colorized, precise time-stamped output bot
   -e, --errcolor C  set the ANSI escape sequence used to color stderr
   -t, --ts          enable timestamps in all outputs
   -r, --relative    display timestamps as relative offsets from start time (implies --ts)
+  -a, --append      append to the log file instead of overwriting it
+  -i, --ignore-interrupts  ignore interrupt signals (finish flushing output on Ctrl-C)
+  --output-error[=MODE]    set behavior on a write error; MODE is one of
+                    warn, warn-nopipe, exit, exit-nopipe (a bare --output-error
+                    means warn; with no --output-error, t3 exits on a broken
+                    pipe and warns on other write errors)
   -h, --help        print this help message
   -v, --version     print version string
   --debug           enable debugging
 ```
+
+The `-a`/`--append`, `-i`/`--ignore-interrupts`, and `--output-error` options
+take their names and broad meaning from [`tee(1)`](https://www.gnu.org/software/coreutils/tee),
+with a few deliberate differences noted below.
+
+- **`-i`/`--ignore-interrupts`** does more than `tee`'s: it makes `t3` *and* its
+  timestamp worker processes ignore `SIGINT`, while the wrapped command keeps
+  the default disposition (so a `Ctrl-C` still interrupts the command). `t3`
+  then drains and flushes the command's final output before exiting, rather
+  than being torn down mid-flush.
+- **`--output-error`** — by default, matching `tee`, `t3` **exits** when a write
+  to its own stdout or stderr fails with a broken pipe, so the log file can be
+  left truncated if a downstream consumer (e.g. `t3 log -- cmd | head`) closes
+  early. On such a fatal write error `t3` exits with a failure status, which
+  **replaces the wrapped command's own exit status**. Pass
+  **`--output-error=warn-nopipe`** to instead ignore broken-pipe errors and keep
+  the log file (and the surviving stream) complete.
+- **`-p`** remains `t3`'s `--plain`, *not* `tee`'s pipe-mode flag; reach the
+  pipe-aware behavior through `--output-error=…-nopipe`.
 
 ## Installing
 

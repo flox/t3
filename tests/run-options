@@ -1,0 +1,108 @@
+#!/bin/sh
+#
+# run-options - behavioral tests for t3's tee-compatible options.
+#
+# The golden-file harness always hands t3 a fresh temp log path, so it cannot
+# distinguish --append from overwrite, nor exercise --output-error's behavior.
+# This script drives those behaviors directly.
+#
+# Env: T3 (default ./t3)
+
+set -eu
+
+t3=${T3:-./t3}
+tmp=$(mktemp -d "${TMPDIR:-/tmp}/t3-options.XXXXXX")
+trap 'rm -rf "$tmp"' EXIT INT TERM
+
+fail() {
+  echo "FAIL: $1" >&2
+  exit 1
+}
+
+# --append accumulates across runs against the same log file.
+"$t3" -a "$tmp/append.log" -- echo first >/dev/null 2>&1
+"$t3" -a "$tmp/append.log" -- echo second >/dev/null 2>&1
+n=$(wc -l <"$tmp/append.log" | tr -d ' ')
+[ "$n" -eq 2 ] || fail "--append produced $n log lines, expected 2"
+grep -q first "$tmp/append.log" && grep -q second "$tmp/append.log" ||
+  fail "--append did not retain both runs"
+
+# Without --append the log file is overwritten.
+"$t3" "$tmp/append.log" -- echo only >/dev/null 2>&1
+n=$(wc -l <"$tmp/append.log" | tr -d ' ')
+[ "$n" -eq 1 ] || fail "overwrite mode produced $n log lines, expected 1"
+
+# A generator that prints $1 numbered lines, used by the broken-pipe tests.
+gen="$tmp/gen.sh"
+printf '#!/bin/sh\ni=0\nwhile [ $i -lt $1 ]; do echo "line $i"; i=$((i + 1)); done\n' \
+  >"$gen"
+chmod +x "$gen"
+
+# Run t3 with its stdout piped into `head -n 1` (which closes the pipe after one
+# line) and report t3's own exit status. The pipeline status is head's, so t3's
+# status is captured inside the pipeline. Usage: broken_pipe_status MODE... .
+broken_pipe_status() {
+  set +e
+  {
+    "$t3" "$@" "$tmp/bp.log" -- "$gen" 100000 2>/dev/null
+    echo $? >"$tmp/bp.status"
+  } | head -n 1 >/dev/null
+  set -e
+  cat "$tmp/bp.status"
+}
+
+# --output-error=warn-nopipe ignores the broken pipe: t3 exits 0 and the log
+# file still receives every line.
+count=2000
+set +e
+{
+  "$t3" --output-error=warn-nopipe "$tmp/oe.log" -- "$gen" "$count" 2>/dev/null
+  echo $? >"$tmp/oe.status"
+} | head -n 1 >/dev/null
+set -e
+rc=$(cat "$tmp/oe.status")
+[ "$rc" -eq 0 ] ||
+  fail "--output-error=warn-nopipe exited $rc, expected 0"
+n=$(wc -l <"$tmp/oe.log" | tr -d ' ')
+[ "$n" -eq "$count" ] ||
+  fail "--output-error=warn-nopipe log has $n lines, expected $count"
+
+# The default mode (no --output-error) is tee-faithful: a broken stdout pipe is
+# fatal, so t3 exits non-zero.
+rc=$(broken_pipe_status)
+[ "$rc" -ne 0 ] ||
+  fail "default mode should exit non-zero on a broken pipe, got $rc"
+
+# --output-error=exit is also fatal on a broken pipe.
+rc=$(broken_pipe_status --output-error=exit)
+[ "$rc" -ne 0 ] ||
+  fail "--output-error=exit should exit non-zero on a broken pipe, got $rc"
+
+# An invalid mode is rejected with a non-zero exit.
+if "$t3" --output-error=bogus "$tmp/x.log" -- true >/dev/null 2>&1; then
+  fail "--output-error=bogus was accepted, expected rejection"
+fi
+
+# --ignore-interrupts: a SIGINT delivered to t3 alone (timeout --foreground
+# signals only t3, not the command) must not tear t3 down - it ignores the
+# signal, lets the command finish, flushes its output, and exits 0. Requires a
+# GNU timeout supporting --foreground/--preserve-status; skipped otherwise. The
+# capability is probed explicitly (rather than letting an absent timeout error
+# from inside an `if`) to keep `make test` output clean.
+if ! command -v timeout >/dev/null 2>&1; then
+  echo "options: skipping -i test (timeout not available)"
+elif ! timeout --foreground --preserve-status -s INT 0.3 true >/dev/null 2>&1; then
+  echo "options: skipping -i test (timeout lacks --foreground/--preserve-status)"
+else
+  set +e
+  timeout --foreground --preserve-status -s INT 0.3 \
+    "$t3" -i "$tmp/i.log" -- sh -c 'sleep 0.6; echo done' >/dev/null 2>&1
+  irc=$?
+  set -e
+  [ "$irc" -eq 0 ] ||
+    fail "--ignore-interrupts: t3 exited $irc after SIGINT, expected 0"
+  grep -q done "$tmp/i.log" ||
+    fail "--ignore-interrupts: command output missing (t3 did not survive SIGINT)"
+fi
+
+echo "options: OK"
