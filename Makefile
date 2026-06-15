@@ -34,7 +34,7 @@ $(MAN1DIR)/%: %
 	cp $< $@
 	chmod 444 $@
 
-.PHONY: all install lint clean stress bench
+.PHONY: all install lint format clean stress options-test test bench
 all: $(BIN) $(MAN1)
 
 install: $(INSTBIN) $(INSTMAN1)
@@ -159,8 +159,13 @@ stress: $(BIN) tests/stress tests/run-stress tests/check-stream.awk
 	@T3=./$(BIN) STRESS_THREADS=$(STRESS_THREADS) STRESS_LINES=$(STRESS_LINES) \
 	    tests/run-stress
 
-# Run the stress test as part of the standard `make test` suite.
-test: stress
+# Behavioral tests for the tee-compatible options (--append, --output-error)
+# that the golden-file harness cannot express.
+options-test: $(BIN) tests/run-options
+	@T3=./$(BIN) tests/run-options
+
+# Run the stress and option tests as part of the standard `make test` suite.
+test: stress options-test
 
 # Benchmark: estimate t3's marginal per-line overhead. Manual only - not part
 # of `make test`. Tunable, e.g. `make bench COUNT=2000000 WIDTHS="32 128"`.
