@@ -3,6 +3,9 @@ schema-version = "1.12.0"
 [install]
 clang-tools.pkg-path = "clang-tools"
 gcc.pkg-path = "gcc"
+glibc.pkg-path = "glibc"
+glibc.outputs = [ "out" ]
+glibc.systems = ["aarch64-linux", "x86_64-linux"]
 gdb.pkg-path = "gdb"
 gnumake.pkg-path = "gnumake"
 help2man.pkg-path = "help2man"
@@ -25,11 +28,11 @@ on-activate = '''
 
 [build.t3]
 sandbox = "pure"
-runtime-packages = []
+runtime-packages = [ "glibc" ]
 version.command = "git describe --tags --always --dirty"
 description = "Next generation tee with colorized output streams and precise time stamping"
 command = '''
-  make
-  make test
-  make install PREFIX=$out
+  make OPTFLAGS="-O -static-libgcc"
+  make test OPTFLAGS="-O -static-libgcc"
+  make install PREFIX=$out OPTFLAGS="-O -static-libgcc"
 '''
