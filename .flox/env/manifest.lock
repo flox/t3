@@ -45,7 +45,7 @@
     "options": {},
     "build": {
       "t3": {
-        "command": "  make OPTFLAGS=\"-O -static-libgcc\"\n  make test OPTFLAGS=\"-O -static-libgcc\"\n  make install PREFIX=$out OPTFLAGS=\"-O -static-libgcc\"\n",
+        "command": "  # -static-libgcc avoids a runtime libgcc dependency on Linux (gcc), but is a\n  # GCC-only flag: the Darwin sandbox uses clang, which rejects it. Apply it\n  # only on Linux so `flox build` works on both platforms.\n  case \"$(uname -s)\" in\n    Linux) optflags=\"-O -static-libgcc\" ;;\n    *)     optflags=\"-O\" ;;\n  esac\n  make OPTFLAGS=\"$optflags\"\n  make test OPTFLAGS=\"$optflags\"\n  make install PREFIX=$out OPTFLAGS=\"$optflags\"\n",
         "runtime-packages": [
           "glibc"
         ],
