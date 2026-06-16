@@ -171,10 +171,19 @@ test: stress options-test
 # Build tests: if flox is available, exercise both package builds to catch
 # Nix-sandbox-specific issues (missing dependencies, race conditions) that
 # don't surface in local builds.
+#
+# Set DISABLE_FLOX_BUILD_TEST=1 to skip this gate even when flox is present.
+# The manifest build passes it to the inner `make test`: with a "pure" sandbox
+# flox is absent so the gate already skips, but a non-pure sandbox could have
+# flox on PATH, and without this the build's `make test` would recurse into
+# another `flox build` indefinitely.
 FLOX := $(shell command -v flox 2>/dev/null)
 
 .PHONY: flox-build-test
-ifneq ($(FLOX),)
+ifneq ($(DISABLE_FLOX_BUILD_TEST),)
+flox-build-test:
+	@echo "--> INFO: skipping flox build tests (DISABLE_FLOX_BUILD_TEST set)"
+else ifneq ($(FLOX),)
 flox-build-test:
 	rm -f result-t3-buildCache
 	$(FLOX) build t3

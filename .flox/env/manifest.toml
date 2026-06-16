@@ -40,6 +40,9 @@ command = '''
     *)     optflags="-O" ;;
   esac
   make OPTFLAGS="$optflags"
-  make test OPTFLAGS="$optflags"
+  # DISABLE_FLOX_BUILD_TEST stops the in-build `make test` from recursing into
+  # another `flox build` if flox is on PATH (it is not in a "pure" sandbox, but
+  # would be in a non-pure one).
+  make test OPTFLAGS="$optflags" DISABLE_FLOX_BUILD_TEST=1
   make install PREFIX=$out OPTFLAGS="$optflags"
 '''
