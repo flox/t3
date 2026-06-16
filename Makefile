@@ -3,7 +3,8 @@
 NAME = t3
 VERSION ?= unknown
 PREFIX ?= /usr/local
-CFLAGS = -Wall -g -DVERSION='"$(VERSION)"'
+OPTFLAGS ?= -g
+CFLAGS = -Wall $(OPTFLAGS) -DVERSION='"$(VERSION)"'
 
 BINDIR = $(PREFIX)/bin
 BIN = $(NAME)
@@ -144,7 +145,7 @@ endef
 $(foreach test,$(TESTS),$(eval $(call TEST_template)))
 
 # The partial write test depends on the compiled tests/midline-flush binary.
-tests/midline-flush/run: tests/midline-flush
+tests/midline-flush.sh: tests/midline-flush
 
 # Concurrency stress test: run a highly-threaded generator under t3 and verify
 # that no output is dropped, duplicated, or garbled.  Tunable via the command
@@ -166,6 +167,24 @@ options-test: $(BIN) tests/run-options
 
 # Run the stress and option tests as part of the standard `make test` suite.
 test: stress options-test
+
+# Build tests: if flox is available, exercise both package builds to catch
+# Nix-sandbox-specific issues (missing dependencies, race conditions) that
+# don't surface in local builds.
+FLOX := $(shell command -v flox 2>/dev/null)
+
+.PHONY: flox-build-test
+ifneq ($(FLOX),)
+flox-build-test:
+	rm -f result-t3-buildCache
+	$(FLOX) build t3
+	$(FLOX) build nixpkgs-t3
+else
+flox-build-test:
+	@echo "--> INFO: skipping flox build tests (flox not in PATH)"
+endif
+
+test: flox-build-test
 
 # Benchmark: estimate t3's marginal per-line overhead. Manual only - not part
 # of `make test`. Tunable, e.g. `make bench COUNT=2000000 WIDTHS="32 128"`.

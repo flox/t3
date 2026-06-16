@@ -18,11 +18,11 @@ int main(int argc, char *argv[]) {
     goodbye(stderr);
     goodbye(stdout);
     fflush(stderr);
-    usleep(10); // It only takes a millisecond to give stderr a head start
-                // but we'll give it ten to avoid false positives where the
-                // first line is written to stdout.
+    usleep(10000); // Give t3 10ms to process and serialize the stderr line
+                   // before stdout arrives; 10µs was too tight under Nix
+                   // sandbox scheduling pressure.
     fflush(stdout);
-    usleep(10); // Sleep once more to ensure that stdout has a chance to
-                // flush its buffer before the subsequent test runs.
+    usleep(10000); // Give t3 10ms to finish writing stdout before the next
+                   // iteration starts.
     return 0;
 }

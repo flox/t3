@@ -22,6 +22,16 @@
       "gdb": {
         "pkg-path": "gdb"
       },
+      "glibc": {
+        "pkg-path": "glibc",
+        "systems": [
+          "aarch64-linux",
+          "x86_64-linux"
+        ],
+        "outputs": [
+          "out"
+        ]
+      },
       "gnumake": {
         "pkg-path": "gnumake"
       },
@@ -35,8 +45,10 @@
     "options": {},
     "build": {
       "t3": {
-        "command": "  make\n  make test\n  make install PREFIX=$out\n",
-        "runtime-packages": [],
+        "command": "  make OPTFLAGS=\"-O -static-libgcc\"\n  make test OPTFLAGS=\"-O -static-libgcc\"\n  make install PREFIX=$out OPTFLAGS=\"-O -static-libgcc\"\n",
+        "runtime-packages": [
+          "glibc"
+        ],
         "sandbox": "pure",
         "version": {
           "command": "git describe --tags --always --dirty"
@@ -617,6 +629,81 @@
       ],
       "outputs": {
         "out": "/nix/store/r41icz95c9q44fznzaq079b7n179va13-gdb-17.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "glibc",
+      "broken": false,
+      "derivation": "/nix/store/8pmd7i2qmg9lj6nvl2ars44947dapnyn-glibc-2.42-61.drv",
+      "description": "GNU C Library",
+      "install_id": "glibc",
+      "license": "LGPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=9ae611a455b90cf061d8f332b977e387bda8e1ca",
+      "name": "glibc-2.42-61",
+      "pname": "glibc",
+      "rev": "9ae611a455b90cf061d8f332b977e387bda8e1ca",
+      "rev_count": 1014179,
+      "rev_date": "2026-06-10T06:56:03Z",
+      "scrape_date": "2026-06-12T03:44:34.260776Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.42-61",
+      "outputs_to_install": [
+        "bin",
+        "bin"
+      ],
+      "outputs": {
+        "bin": "/nix/store/z1nc673qnmvbqxqwv93pfhc956vcfvyk-glibc-2.42-61-bin",
+        "debug": "/nix/store/xq79pkgs6m7ww54ddqsd1i86xawzgcrv-glibc-2.42-61-debug",
+        "dev": "/nix/store/11azz9spqc81walgg0mq9wjxrgbi4xqz-glibc-2.42-61-dev",
+        "getent": "/nix/store/4iw5j5yf5982bi3w8406787572gixki8-glibc-2.42-61-getent",
+        "out": "/nix/store/1bdzriipn18184zpwh2lfdabk2gqcgxn-glibc-2.42-61",
+        "static": "/nix/store/q98qshrf9k4f1jm9y80j0l2s2ff32fhd-glibc-2.42-61-static"
+      },
+      "system": "aarch64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "glibc",
+      "broken": false,
+      "derivation": "/nix/store/3rx2w7lxnr0ndimg0mavnb4klbm04amd-glibc-2.42-61.drv",
+      "description": "GNU C Library",
+      "install_id": "glibc",
+      "license": "LGPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=9ae611a455b90cf061d8f332b977e387bda8e1ca",
+      "name": "glibc-2.42-61",
+      "pname": "glibc",
+      "rev": "9ae611a455b90cf061d8f332b977e387bda8e1ca",
+      "rev_count": 1014179,
+      "rev_date": "2026-06-10T06:56:03Z",
+      "scrape_date": "2026-06-12T04:47:37.489221Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.42-61",
+      "outputs_to_install": [
+        "bin",
+        "bin",
+        "bin",
+        "bin",
+        "bin"
+      ],
+      "outputs": {
+        "bin": "/nix/store/bsh7n2nx8ndmm1mmww6v2h4851nalj13-glibc-2.42-61-bin",
+        "debug": "/nix/store/064aav9qq5cszj4vw0q9z35pf9mjrj5w-glibc-2.42-61-debug",
+        "dev": "/nix/store/15h9askp4k1lx44d9871wid23j2a8ijp-glibc-2.42-61-dev",
+        "getent": "/nix/store/nacdc243fq2l9csjcbb1d2pzb14pfq8b-glibc-2.42-61-getent",
+        "out": "/nix/store/57iz36553175g3178pvxjij8z5rcsd4n-glibc-2.42-61",
+        "static": "/nix/store/b5qr6vlws4ifz9y5b98rn08iif41imv8-glibc-2.42-61-static"
       },
       "system": "x86_64-linux",
       "group": "toplevel",
