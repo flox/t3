@@ -3,3 +3,7 @@ cache/
 lib/
 log/
 !env/
+# The lockfile embeds absolute /nix/store paths. nixpkgs fetches this repo's
+# source as a fixed-output derivation, which must not reference store paths, so
+# the lock cannot be committed. flox regenerates it locally from manifest.toml.
+env/manifest.lock
